@@ -1,25 +1,31 @@
 ---
 name: RaspberryMatic CCU (snapshot)
-version: 3.61.7.20220302-65e8633
+version: 3.79.6.20250220-798a3c6
 stage: experimental
 slug: raspberrymatic-dev
 image: ghcr.io/jens-maus/raspberrymatic
 arch:
-  - armhf
+  - armv7
   - aarch64
   - amd64
 description: HomeMatic/homematicIP CCU central based on RaspberryMatic (Snapshot)
 url: https://github.com/jens-maus/RaspberryMatic/
-watchdog: tcp://[HOST]:[PORT:80]
 ingress: true
 ingress_stream: true
 panel_title: RaspberryMatic (snapshot)
 panel_icon: mdi:router-wireless
 startup: services
 map:
-  - backup:rw
+  - type: data
+    read_only: false
+    path: /usr/local
+  - type: backup
+    read_only: false
 init: false
-timeout: 120
+backup_pre: /bin/sh -c "/bin/echo 'load tclrega.so; rega system.Save()' | /bin/tclsh && /bin/sync"
+backup_exclude:
+  - "*/tmp/.watchdog"
+timeout: 240
 devices:
   - /dev/raw-uart
   - /dev/raw-uart1
@@ -30,6 +36,7 @@ devices:
   - /dev/i2c-1
 udev: true
 usb: true
+uart: true
 kernel_modules: true
 realtime: true
 ports:
@@ -68,6 +75,14 @@ ports:
   8083/tcp: null
   9092/tcp: null
   5435/tcp: null
+  2121/tcp: null
+  2122/tcp: null
+  1883/tcp: null
+  8883/tcp: null
+  2110/tcp: null
+  8911/tcp: null
+  5855/udp: null
+  2812/tcp: null
 ports_description:
   22/tcp: SSH access (Extern)
   80/tcp: CCU WebUI HTTP (Extern)
@@ -104,6 +119,14 @@ ports_description:
   8083/tcp: CCU-Historian DB-WebUI (Extern)
   9092/tcp: CCU-Historian DB-Port (Extern)
   5435/tcp: CCU-Historian DB-pgPort (Extern)
+  2121/tcp: CCU-Jack HTTP (Extern)
+  2122/tcp: CCU-Jack HTTPS (Extern)
+  1883/tcp: CCU-Jack MQTT (Extern)
+  8883/tcp: CCU-Jack MQTT-Secure (Extern)
+  2110/tcp: homeputer CL Exec-Engine (Extern)
+  8911/tcp: Haus-Bus WebUI (Extern)
+  5855/udp: Haus-Bus communication (Extern)
+  2812/tcp: Monit Monitoring WebUI (Extern)
 environment:
   HM_RUNNING_IN_HA: "1"
   HM_HAPROXY_SRC: 172.30.32.2/32

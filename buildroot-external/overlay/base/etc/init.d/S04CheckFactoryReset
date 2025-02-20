@@ -1,5 +1,5 @@
 #!/bin/sh
-# shellcheck shell=dash disable=SC2169 source=/dev/null
+# shellcheck shell=dash disable=SC2169,SC3010,SC3036 source=/dev/null
 #
 # Startup script to check for a factory reset
 #
@@ -17,7 +17,7 @@ check_factory_reset() {
   # source all data from /var/hm_mode
   [[ -r /var/hm_mode ]] && . /var/hm_mode
 
-  if [[ "${HM_HOST}" != "oci" ]]; then
+  if [[ ! "${HM_HOST}" =~ oci\|lxc ]]; then
 
     # extract partition number and device name
     DEVNODE=$(mountpoint -d /usr/local)
@@ -26,9 +26,9 @@ check_factory_reset() {
     DEV="/dev/$(readlink "/sys/dev/block/${DEVNODE}" | awk -F/ '{print $(NF-1)}')"
 
     # find out maximum SD card size (in cylinders)
-    START_CHS=$(parted -s "${DEV}" unit chs print | grep "^ ${PARTNUM} " | awk '{print $2}')
-    END_CHS=$(parted -s "${DEV}" unit chs print | grep "^ ${PARTNUM} " | awk '{print $3}')
-    MAX_CHS=$(parted -s "${DEV}" unit chs print | grep "Disk ${DEV}" | cut -d' ' -f3)
+    START_CHS=$(parted -s -f "${DEV}" unit chs print | grep "^ ${PARTNUM} " | awk '{print $2}')
+    END_CHS=$(parted -s -f "${DEV}" unit chs print | grep "^ ${PARTNUM} " | awk '{print $3}')
+    MAX_CHS=$(parted -s -f "${DEV}" unit chs print | grep "Disk ${DEV}" | cut -d' ' -f3)
 
     # umount /usr/local to regenerate it
     umount -f /usr/local
@@ -37,7 +37,7 @@ check_factory_reset() {
     if [[ -n "${START_CHS}" && -n "${END_CHS}" && -n "${MAX_CHS}" && "${END_CHS}" != "${MAX_CHS}" ]]; then
       # use resizepart to resize the /usr/local partition to the maximum size of
       # the disk
-      parted -s "${DEV}" resizepart "${PARTNUM}" 100%
+      parted -s -f "${DEV}" resizepart "${PARTNUM}" 100%
     fi
 
     # force PARTUUID to 0xDEEDBEEF (because parted changes partuuid) even
@@ -92,4 +92,4 @@ case "$1" in
     exit 1
 esac
 
-exit $?
+exit 0
