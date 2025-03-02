@@ -9,17 +9,29 @@ on:
       release_date:
         description: 'Release date override (YYYYMMDD)'
         required: true
-        default: "YYYYMMDD"
-      skip_build:
-        description: 'Skip build (for testing workflow)?'
+        type: string
+        default: 'YYYYMMDD'
+      test_workflow:
+        description: 'Test workflow (dry-run)?'
         required: true
-        default: "true"
+        type: 'boolean'
+        default: 'false'
+      platforms:
+        description: 'List of platforms to build (comma seperated, e.g. "rpi3","rpi4")'
+        required: true
+        default: 'all'
+        type: string
+
+# default read-only permission
+permissions:
+  contents: read
 
 jobs:
-
   release_draft:
+    permissions:
+      contents: write  # ncipollo/release-action
     name: Release draft
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     outputs:
       upload_url: ${{ steps.release_drafter.outputs.upload_url }}
       occu_version: ${{ steps.env.outputs.occu_version }}
@@ -29,7 +41,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -43,22 +55,22 @@ jobs:
             BUILD_DATE=${{ github.event.inputs.release_date }}
           fi
           OCCU_VERSION=$(grep 'OCCU_VERSION =' buildroot-external/package/occu/occu.mk | cut -d' ' -f3 | cut -d'-' -f1)
-          echo "::set-output name=occu_version::${OCCU_VERSION}"
-          echo "::set-output name=version::${OCCU_VERSION}.${BUILD_DATE}"
-          echo "::set-output name=date::${BUILD_DATE}"
-          if [[ "${{ github.event.inputs.skip_build }}" == "true" ]]; then
-            echo "::set-output name=tag::${OCCU_VERSION}.${BUILD_DATE}-draft"
+          echo "occu_version=${OCCU_VERSION}" >> $GITHUB_OUTPUT
+          echo "version=${OCCU_VERSION}.${BUILD_DATE}" >> $GITHUB_OUTPUT
+          echo "date=${BUILD_DATE}" >> $GITHUB_OUTPUT
+          if [[ "${{ github.event.inputs.test_workflow }}" == "true" ]]; then
+            echo "tag=${OCCU_VERSION}.${BUILD_DATE}-draft" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=tag::${OCCU_VERSION}.${BUILD_DATE}"
+            echo "tag=${OCCU_VERSION}.${BUILD_DATE}" >> $GITHUB_OUTPUT
           fi
 
       - name: Get previous tag
         id: previoustag
-        uses: WyriHaximus/github-action-get-previous-tag@v1.1
+        uses: WyriHaximus/github-action-get-previous-tag@v1.4
 
       - name: Generate changelog
         id: changelog
-        uses: metcalfc/changelog-generator@v3.0.0
+        uses: metcalfc/changelog-generator@v4.3.1
         with:
           myToken: ${{ secrets.GITHUB_TOKEN }}
 
@@ -76,7 +88,7 @@ jobs:
 
       - name: Create release draft
         id: release_drafter
-        uses: ncipollo/release-action@v1.9.0
+        uses: ncipollo/release-action@v1.16.0
         with:
           tag: ${{ steps.env.outputs.tag }}
           name: 'RaspberryMatic ${{ steps.env.outputs.version }}'
@@ -87,16 +99,18 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload release-template.md artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           path: /tmp/release-template.md
           name: release-template.md
 
   build:
+    permissions:
+      contents: write  # shogo82148/actions-upload-release-asset
     name: Release build [${{ matrix.platform }}]
     if: github.repository == 'jens-maus/RaspberryMatic'
     runs-on: self-hosted
-    timeout-minutes: 480
+    timeout-minutes: 300
     needs: release_draft
     outputs:
       build_datetime: ${{ steps.env.outputs.build_datetime }}
@@ -104,28 +118,47 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [rpi0, rpi2, rpi3, rpi4, tinkerboard, odroid-c2, odroid-c4, odroid-n2, intelnuc, ova, oci_amd64, oci_arm64, oci_arm]
+        platform: ${{ fromJSON(format('[{0}]', (github.event.inputs.platforms == '' || github.event.inputs.platforms == 'all') && '"rpi0","rpi2","rpi3","rpi4","rpi5","tinkerboard","odroid-c2","odroid-c4","odroid-n2","ova","oci_amd64","oci_arm64","oci_arm","generic-x86_64","generic-aarch64","lxc_amd64","lxc_arm64","lxc_arm"' || github.event.inputs.platforms)) }}
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install Dependencies
         run: |
-          if ! dpkg-query -l wget bc cpio rsync zip python >/dev/null 2>&1; then
+          if ! dpkg-query -l wget bc cpio rsync zip python3 file >/dev/null 2>&1; then
             apt update
-            apt install -y --no-install-recommends wget bc cpio rsync zip python
+            apt install -y --no-install-recommends wget bc cpio rsync zip python3 file
           fi
           if ! getent group | grep -q ^builder:; then groupadd -g 48 builder; fi
           if ! getent passwd | grep -q ^builder:; then useradd -m -u 1003 -g 48 -G sudo builder; fi
           if ! grep -q ^builder; then echo "builder ALL=(ALL:ALL) NOPASSWD: ALL" >>/etc/sudoers; fi
-          chown -R builder .
+          chown -R builder:builder /home/builder
 
       - name: Setup Environment
         id: env
         run: |
-          echo "FAKE_BUILD=${{ github.event.inputs.skip_build }}" >> $GITHUB_ENV
-          echo "::set-output name=build_datetime::$(date +'%Y-%m-%d %H:%M:%S')"
+          JLEVEL=0
+          if [[ -f /sys/fs/cgroup/cpu.max ]]; then # cgroups v2
+            CPU_QUOTA=$(cut -d ' ' -f1 /sys/fs/cgroup/cpu.max)
+            if [[ "${CPU_QUOTA}" != "max" ]]; then
+              CPU_PERIOD=$(cut -d ' ' -f2 /sys/fs/cgroup/cpu.max)
+              JLEVEL=$((CPU_QUOTA / CPU_PERIOD + 1))
+            fi
+          elif [[ -f /sys/fs/cgroup/cpu/cpu.cfs_quota_us ]]; then # cgroups v1
+            CPU_QUOTA=$(cat /sys/fs/cgroup/cpu/cpu.cfs_quota_us)
+            if [[ "${CPU_QUOTA}" != "-1" ]]; then
+              CPU_PERIOD=$(cat /sys/fs/cgroup/cpu/cpu.cfs_period_us)
+              JLEVEL=$((CPU_QUOTA / CPU_PERIOD + 1))
+            fi
+          fi
+          echo "JLEVEL=${JLEVEL}" >> $GITHUB_ENV
+          if [[ "${{ github.event.inputs.test_workflow }}" == "true" ]]; then
+            echo "FAKE_BUILD=true" >> $GITHUB_ENV
+          else
+            echo "FAKE_BUILD=" >> $GITHUB_ENV
+          fi
+          echo "build_datetime=$(date -u +'%FT%T.%3NZ')" >> $GITHUB_OUTPUT
 
       # - name: remote debug tmate session
       #   uses: mxschmitt/action-tmate@v1
@@ -133,126 +166,127 @@ jobs:
 
       # major build step
       - name: Build
-        timeout-minutes: 480
+        timeout-minutes: 300
         run: |
-          CPU_QUOTA=$(cat /sys/fs/cgroup/cpu/cpu.cfs_quota_us)
-          JLEVEL=0
-          if [[ "${CPU_QUOTA}" != "-1" ]]; then
-            CPU_PERIOD=$(cat /sys/fs/cgroup/cpu/cpu.cfs_period_us)
-            JLEVEL=$((CPU_QUOTA / CPU_PERIOD + 1))
-          fi
-          sudo -H -E -u builder nice -n 19 make DATE=${{ needs.release_draft.outputs.date }} BR2_DL_DIR=/mnt/download BR2_CCACHE_DIR=/mnt/ccache/${{ matrix.platform }} BR2_JLEVEL=${JLEVEL} raspmatic_${{ matrix.platform }}-release
+          rm -rf release/RaspberryMatic-* buildroot-????.*
+          sudo -H -E -u builder nice -n 19 make DATE=${{ needs.release_draft.outputs.date }} BR2_DL_DIR=/mnt/download BR2_CCACHE_DIR=/mnt/ccache/${{ matrix.platform }} BR2_JLEVEL=${{ env.JLEVEL }} clean-all raspmatic_${{ matrix.platform }}-release
 
       # cleanup
       - name: Cleanup
         run: |
-          rm -f release/*.img*
-          make distclean
+          make clean-all
+          rm -rf release/*.img* buildroot-????.*
 
       #######################
       # release uploads
-      - name: Upload release snapshot [rpi*, tinkerboard, odroid-*, intelnuc, ova]
+      - name: Upload release snapshot [rpi*, tinkerboard, odroid-*, ova, generic-*]
         if: |
-          !startsWith(matrix.platform, 'oci_')
-        uses: actions/upload-release-asset@v1.0.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          !startsWith(matrix.platform, 'oci_') &&
+          !startsWith(matrix.platform, 'lxc_')
+        uses: shogo82148/actions-upload-release-asset@v1
         with:
           upload_url: ${{ needs.release_draft.outputs.upload_url }}
           asset_path: release/RaspberryMatic-${{ needs.release_draft.outputs.version }}-${{ matrix.platform }}.zip
-          asset_name: RaspberryMatic-${{ needs.release_draft.outputs.version }}-${{ matrix.platform }}.zip
           asset_content_type: application/zip
+          overwrite: true
 
-      - name: Upload build release checksum [rpi*, tinkerboard, intelnuc, ova]
+      - name: Upload build release checksum [rpi*, tinkerboard, ova, generic-*]
         if: |
-          !startsWith(matrix.platform, 'oci_')
-        uses: actions/upload-release-asset@v1.0.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          !startsWith(matrix.platform, 'oci_') &&
+          !startsWith(matrix.platform, 'lxc_')
+        uses: shogo82148/actions-upload-release-asset@v1
         with:
           upload_url: ${{ needs.release_draft.outputs.upload_url }}
           asset_path: release/RaspberryMatic-${{ needs.release_draft.outputs.version }}-${{ matrix.platform }}.zip.sha256
-          asset_name: RaspberryMatic-${{ needs.release_draft.outputs.version }}-${{ matrix.platform }}.zip.sha256
           asset_content_type: text/plain
+          overwrite: true
 
       - name: Upload build release [ccu3]
         if: |
           matrix.platform == 'rpi3'
-        uses: actions/upload-release-asset@v1.0.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: shogo82148/actions-upload-release-asset@v1
         with:
           upload_url: ${{ needs.release_draft.outputs.upload_url }}
           asset_path: release/RaspberryMatic-${{ needs.release_draft.outputs.version }}-ccu3.tgz
-          asset_name: RaspberryMatic-${{ needs.release_draft.outputs.version }}-ccu3.tgz
           asset_content_type: application/gzip
+          overwrite: true
 
       - name: Upload build release checksum [ccu3]
         if: |
           matrix.platform == 'rpi3'
-        uses: actions/upload-release-asset@v1.0.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: shogo82148/actions-upload-release-asset@v1
         with:
           upload_url: ${{ needs.release_draft.outputs.upload_url }}
           asset_path: release/RaspberryMatic-${{ needs.release_draft.outputs.version }}-ccu3.tgz.sha256
-          asset_name: RaspberryMatic-${{ needs.release_draft.outputs.version }}-ccu3.tgz.sha256
           asset_content_type: text/plain
+          overwrite: true
 
       - name: Upload build release [ova]
         if: |
           matrix.platform == 'ova'
-        uses: actions/upload-release-asset@v1.0.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: shogo82148/actions-upload-release-asset@v1
         with:
           upload_url: ${{ needs.release_draft.outputs.upload_url }}
           asset_path: release/RaspberryMatic-${{ needs.release_draft.outputs.version }}.ova
-          asset_name: RaspberryMatic-${{ needs.release_draft.outputs.version }}.ova
           asset_content_type: application/gzip
+          overwrite: true
 
       - name: Upload build release checksum [ova]
         if: |
           matrix.platform == 'ova'
-        uses: actions/upload-release-asset@v1.0.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: shogo82148/actions-upload-release-asset@v1
         with:
           upload_url: ${{ needs.release_draft.outputs.upload_url }}
           asset_path: release/RaspberryMatic-${{ needs.release_draft.outputs.version }}.ova.sha256
-          asset_name: RaspberryMatic-${{ needs.release_draft.outputs.version }}.ova.sha256
           asset_content_type: text/plain
+          overwrite: true
 
       - name: Upload build release [oci]
         if: |
           startsWith(matrix.platform, 'oci_')
-        uses: actions/upload-release-asset@v1.0.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: shogo82148/actions-upload-release-asset@v1
         with:
           upload_url: ${{ needs.release_draft.outputs.upload_url }}
           asset_path: release/RaspberryMatic-${{ needs.release_draft.outputs.version }}-${{ matrix.platform }}.tgz
-          asset_name: RaspberryMatic-${{ needs.release_draft.outputs.version }}-${{ matrix.platform }}.tgz
           asset_content_type: application/gzip
+          overwrite: true
 
       - name: Upload build release checksum [oci]
         if: |
           startsWith(matrix.platform, 'oci_')
-        uses: actions/upload-release-asset@v1.0.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: shogo82148/actions-upload-release-asset@v1
         with:
           upload_url: ${{ needs.release_draft.outputs.upload_url }}
           asset_path: release/RaspberryMatic-${{ needs.release_draft.outputs.version }}-${{ matrix.platform }}.tgz.sha256
-          asset_name: RaspberryMatic-${{ needs.release_draft.outputs.version }}-${{ matrix.platform }}.tgz.sha256
           asset_content_type: text/plain
+          overwrite: true
+
+      - name: Upload build release [lxc]
+        if: |
+          startsWith(matrix.platform, 'lxc_')
+        uses: shogo82148/actions-upload-release-asset@v1
+        with:
+          upload_url: ${{ needs.release_draft.outputs.upload_url }}
+          asset_path: release/RaspberryMatic-${{ needs.release_draft.outputs.version }}-${{ matrix.platform }}.tar.xz
+          asset_content_type: application/x-xz
+          overwrite: true
+
+      - name: Upload build release checksum [lxc]
+        if: |
+          startsWith(matrix.platform, 'lxc_')
+        uses: shogo82148/actions-upload-release-asset@v1
+        with:
+          upload_url: ${{ needs.release_draft.outputs.upload_url }}
+          asset_path: release/RaspberryMatic-${{ needs.release_draft.outputs.version }}-${{ matrix.platform }}.tar.xz.sha256
+          asset_content_type: text/plain
+          overwrite: true
 
       ########################
       # upload build artifacts
       - name: Upload build artifact [oci]
         if: |
           startsWith(matrix.platform, 'oci_')
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           path: release/RaspberryMatic-${{ needs.release_draft.outputs.version }}-${{ matrix.platform }}.tgz*
           name: RaspberryMatic-${{ needs.release_draft.outputs.version }}-${{ matrix.platform }}.tgz
@@ -261,7 +295,7 @@ jobs:
       #######################
       # manifest file artifact upload
       - name: Upload manifest artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           path: release/RaspberryMatic-${{ needs.release_draft.outputs.version }}-${{ matrix.platform }}.mf
           name: RaspberryMatic-${{ needs.release_draft.outputs.version }}-${{ matrix.platform }}.mf
@@ -269,16 +303,18 @@ jobs:
   ##########################################
   # Update checksums in release draft
   update-checksums:
+    permissions:
+      contents: write  # ncipollo/release-action
     name: Update checksums
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: [release_draft, build]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # download all artifact files
       - name: Download all workflow artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
 
       - name: Patch release draft
         shell: bash
@@ -295,7 +331,7 @@ jobs:
           done
 
       - name: Update release draft
-        uses: ncipollo/release-action@v1.9.0
+        uses: ncipollo/release-action@v1.16.0
         with:
           tag: ${{ needs.release_draft.outputs.tag }}
           bodyFile: release-template.md/release-template.md
@@ -309,13 +345,20 @@ jobs:
   ##########################################
   # OCI/Docker build and registry push step
   oci-multiarch-build-push:
+    permissions:
+      contents: write  # ncipollo/release-action
+      packages: write  # docker/build-push-action
     name: OCI/Docker Build+Push
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: [release_draft, build]
+    if: github.event_name != 'pull_request' &&
+      ( github.event.inputs.platforms == '' ||
+        github.event.inputs.platforms == 'all' ||
+        contains(github.event.inputs.platforms, 'oci_'))
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Environment
         run: |
@@ -323,26 +366,31 @@ jobs:
 
       # download OCI platform artifacts
       - name: Download oci_amd64 artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: RaspberryMatic-${{ needs.release_draft.outputs.version }}-oci_amd64.tgz
       - name: Download oci_arm64 artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: RaspberryMatic-${{ needs.release_draft.outputs.version }}-oci_arm64.tgz
       - name: Download oci_arm artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: RaspberryMatic-${{ needs.release_draft.outputs.version }}-oci_arm.tgz
 
       - name: Extract OCI artifacts
         run: |
+          rm -rf oci_build
           mkdir -p oci_build
-          cd oci_build
-          for f in ../*-oci_*.tgz; do
-            tar --wildcards --strip-components 1 -xf $f "*/layer.tar"
-            mv -f layer.tar $(basename $f .tgz).tar
-            rm -f $f
+          cd oci_build || exit 1
+          for f in ../RaspberryMatic-${{ needs.release_draft.outputs.version }}-oci_*.tgz; do
+            echo "extracting ${f}..."
+            DIR=$(basename "${f}" .tgz)
+            mkdir -p "${DIR}"
+            tar -C "${DIR}" -xf "${f}"
+            LAYER=$(jq -r '.[0].Layers[0]' "${DIR}/manifest.json")
+            mv -f "${DIR}/${LAYER}" "./${DIR}.tar"
+            rm -rf "${DIR}" "${f}"*
           done
 
       - name: Build OCI tags
@@ -356,39 +404,60 @@ jobs:
           else
             BRANCH_TAG="${BASE_TAG}:latest-${BRANCH}"
           fi
-          echo "##[set-output name=unique_tag;]${UNIQUE_TAG}"
-          echo "##[set-output name=branch_tag;]${BRANCH_TAG}"
+          echo "unique_tag=${UNIQUE_TAG}" >> $GITHUB_OUTPUT
+          echo "branch_tag=${BRANCH_TAG}" >> $GITHUB_OUTPUT
         id: extract_branch
 
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v1.6.0
+        uses: docker/setup-buildx-action@v3.10.0
         with:
-          version: latest
           install: true
 
       - name: Login to GitHub Container Registry
-        if: github.event.inputs.skip_build == 'false'
-        uses: docker/login-action@v1.14.1
+        if: github.event.inputs.test_workflow != 'true'
+        uses: docker/login-action@v3.3.0
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.CR_PAT }}
 
+      - name: Extract docker metadata
+        id: meta
+        uses: docker/metadata-action@v5.7.0
+        with:
+          images: ghcr.io/${{ github.repository }}
+          labels: |
+            org.opencontainers.image.description=Alternative OS for your homematicIP CCU
+            org.opencontainers.image.vendor=RasperryMatic OpenSource Project
+            org.opencontainers.image.authors=RaspberryMatic OpenSource Team
+            org.opencontainers.image.version=${{ needs.release_draft.outputs.version }}
+            org.opencontainers.image.url=https://raspberrymatic.de
+            org.opencontainers.image.created=${{ needs.build.outputs.build_datetime }}
+          annotations: |
+            org.opencontainers.image.description=Alternative OS for your homematicIP CCU
+            org.opencontainers.image.vendor=RasperryMatic OpenSource Project
+            org.opencontainers.image.authors=RaspberryMatic OpenSource Team
+            org.opencontainers.image.version=${{ needs.release_draft.outputs.version }}
+            org.opencontainers.image.url=https://raspberrymatic.de
+            org.opencontainers.image.created=${{ needs.build.outputs.build_datetime }}
+        env:
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
+
       - name: Build and push container image
-        if: github.event.inputs.skip_build == 'false'
-        uses: docker/build-push-action@v2.9.0
+        if: github.event.inputs.test_workflow != 'true'
+        uses: docker/build-push-action@v6.15.0
         id: docker_build
         with:
           context: oci_build
           file: buildroot-external/board/oci/Dockerfile
-          platforms: linux/amd64,linux/arm64,linux/arm
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
           build-args: |
             tar_prefix=RaspberryMatic-${{ needs.release_draft.outputs.version }}-oci_
           labels: |
             org.opencontainers.image.title=RaspberryMatic
-            org.opencontainers.image.description=Alternative OS for your HomeMatic CCU
+            org.opencontainers.image.description=Alternative OS for your homematicIP CCU
             org.opencontainers.image.vendor=RasperryMatic OpenSource Project
             org.opencontainers.image.authors=RaspberryMatic OpenSource Team
             org.opencontainers.image.licenses=Apache-2.0
@@ -404,23 +473,31 @@ jobs:
             io.hass.url=https://github.com/${{ github.repository }}/tree/master/home-assistant-addon
             io.hass.version=${{ needs.release_draft.outputs.version }}
             io.hass.type=addon
-            io.hass.arch=armhf|aarch64|amd64
+            io.hass.arch=armv7|aarch64|amd64
           tags: |
             ${{ steps.extract_branch.outputs.unique_tag }}
             ${{ steps.extract_branch.outputs.branch_tag }}
+          annotations: |
+            ${{ steps.meta.outputs.annotations }}
 
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
 
+      - name: Cleanup oci_build dir
+        run: |
+          rm -rf oci_build
+
   ##########################################
   # Publish new version to public
   publish-build:
+    permissions:
+      contents: write  # github-actions[bot] repo write access
     name: Publish build
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: [release_draft, build, oci-multiarch-build-push]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Bump HomeAssistant add-on version
         run: |
@@ -428,21 +505,26 @@ jobs:
 
       # download rpi manifest files
       - name: Download rpi0 manifest
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: RaspberryMatic-${{ needs.release_draft.outputs.version }}-rpi0.mf
       - name: Download rpi2 manifest
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: RaspberryMatic-${{ needs.release_draft.outputs.version }}-rpi2.mf
       - name: Download rpi3 manifest
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: RaspberryMatic-${{ needs.release_draft.outputs.version }}-rpi3.mf
       - name: Download rpi4 manifest
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: RaspberryMatic-${{ needs.release_draft.outputs.version }}-rpi4.mf
+      - name: Download rpi5 manifest
+        uses: actions/download-artifact@v4
+        with:
+          name: RaspberryMatic-${{ needs.release_draft.outputs.version }}-rpi5.mf
+
 
       - name: Bump rpi-imager version
         run: |
@@ -450,7 +532,8 @@ jobs:
             RaspberryMatic-${{ needs.release_draft.outputs.version }}-rpi0.mf \
             RaspberryMatic-${{ needs.release_draft.outputs.version }}-rpi2.mf \
             RaspberryMatic-${{ needs.release_draft.outputs.version }}-rpi3.mf \
-            RaspberryMatic-${{ needs.release_draft.outputs.version }}-rpi4.mf
+            RaspberryMatic-${{ needs.release_draft.outputs.version }}-rpi4.mf \
+            RaspberryMatic-${{ needs.release_draft.outputs.version }}-rpi5.mf
 
       - name: Bump LATEST-VERSION.js
         run: |
@@ -471,26 +554,29 @@ jobs:
           git diff
 
       - name: Commit changes
-        if: github.event.inputs.skip_build == 'false'
+        if: github.event.inputs.test_workflow != 'true'
         run: |
           git config user.name "github-actions"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase --autostash
           git commit -a -m "release bump [${{ needs.release_draft.outputs.version }}]"
           git push
 
   helm:
+    permissions:
+      contents: write  # stefanprodan/helm-gh-pages
     name: Build K8s Helm chart
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: [release_draft, oci-multiarch-build-push, publish-build]
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Publish Helm chart
-        if: github.event.inputs.skip_build == 'false'
+        if: github.event.inputs.test_workflow != 'true'
         uses: stefanprodan/helm-gh-pages@master
         with:
           token: ${{ secrets.GITHUB_TOKEN }}

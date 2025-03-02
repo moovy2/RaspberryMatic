@@ -48,23 +48,6 @@ check program udevdEnabled with path "/bin/grep -q 'HM_RUNNING_IN_HA=' /var/hm_m
     group system
     if status = 0 for 1 cycles then unmonitor
 
-# irqbalance daemon monitoring
-check process irqbalance with pidfile /var/run/irqbalance.pid
-    group system
-    start = "/etc/init.d/S13irqbalance start"
-    stop = "/etc/init.d/S13irqbalance stop"
-    restart = "/etc/init.d/S13irqbalance restart"
-    if not exist for 1 cycles then restart
-    if 1 restart within 1 cycles then
-      exec "/bin/triggerAlarm.tcl 'irqbalance restarted' 'WatchDog: irqbalance-restart' true"
-    if filedescriptors > 95% for 5 cycles then
-      exec "/bin/triggerAlarm.tcl 'irqbalance: high filedescriptor usage (>95%)' 'WatchDog: irqbalance-highfd' true"
-    depends on irqbalanceEnabled
-
-check program irqbalanceEnabled with path /bin/sh -c "/usr/bin/test $(nproc) -gt 1"
-    group system
-    if status != 0 for 1 cycles then unmonitor
-
 # eq3config daemon monitoring
 check process eq3configd with pidfile /var/run/eq3configd.pid
     group homematic
@@ -72,7 +55,7 @@ check process eq3configd with pidfile /var/run/eq3configd.pid
     stop = "/etc/init.d/S50eq3configd stop"
     restart = "/etc/init.d/S50eq3configd restart"
     if not exist for 1 cycles then restart
-    if failed port 43439 type udp for 5 cycles then restart
+    if failed port 43439 type udp for 20 cycles then restart
     if 1 restart within 1 cycles then
       exec "/bin/triggerAlarm.tcl 'eq3configd restarted' 'WatchDog: eq3configd-restart' true"
     if filedescriptors > 95% for 5 cycles then
@@ -92,7 +75,6 @@ check process lighttpd with pidfile /var/run/lighttpd-angel.pid
     if failed port 443 and certificate valid > 30 days for 5 cycles then
       exec "/bin/triggerAlarm.tcl 'HTTPS certificate expiring in < 30 days' 'WatchDog: lighttpd-expired-sslcert' true"
     if failed port 80 for 5 cycles then restart
-    if failed port 443 for 5 cycles then restart
     if failed port 1999 for 5 cycles then restart
     if failed port 2000 for 5 cycles then restart
     if failed port 2001 for 5 cycles then restart
@@ -114,7 +96,7 @@ check process ssdpd with pidfile /var/run/ssdpd.pid
     stop = "/etc/init.d/S50ssdpd stop"
     restart = "/etc/init.d/S50ssdpd restart"
     if not exist for 1 cycles then restart
-    if failed port 1900 type udp for 5 cycles then restart
+    if failed port 1900 type udp for 20 cycles then restart
     if 1 restart within 1 cycles then
       exec "/bin/triggerAlarm.tcl 'ssdpd restarted' 'WatchDog: ssdpd-restart' true"
     if filedescriptors > 95% for 5 cycles then
@@ -127,7 +109,7 @@ check process sshd with pidfile /var/run/sshd.pid
     stop = "/etc/init.d/S50sshd stop"
     restart = "/etc/init.d/S50sshd restart"
     if not exist for 1 cycles then restart
-    #if failed port 22 for 5 cycles then restart
+    #if failed port 22 protocol ssh for 5 cycles then restart
     if 1 restart within 1 cycles then
       exec "/bin/triggerAlarm.tcl 'sshd restarted' 'WatchDog: sshd-restart' true"
     if filedescriptors > 95% for 5 cycles then
@@ -145,7 +127,7 @@ check process hs485d with pidfile /var/run/hs485dLoader.pid
     stop = "/etc/init.d/S60hs485d stop"
     restart = "/etc/init.d/S60hs485d restart"
     if not exist for 1 cycles then restart
-    if failed port 32000 for 5 cycles then restart
+    if failed port 32000 for 20 cycles then restart
     if 1 restart within 1 cycles then
       exec "/bin/triggerAlarm.tcl 'hs485d restarted' 'WatchDog: hs485d-restart' true"
     if filedescriptors > 95% for 5 cycles then
@@ -167,7 +149,7 @@ check process multimacd with pidfile /var/run/multimacd.pid
       exec "/bin/triggerAlarm.tcl 'multimacd restarted' 'WatchDog: multimacd-restart' true"
     if filedescriptors > 95% for 5 cycles then
       exec "/bin/triggerAlarm.tcl 'multimacd: high filedescriptor usage (>95%)' 'WatchDog: multimacd-highfd' true"
-    depends on multimacdEnabled, hmlangwDisabled
+    depends on multimacdEnabled
 
 check program multimacdEnabled with path "/usr/bin/test -f /var/etc/multimacd.conf"
     group homematic
@@ -197,7 +179,7 @@ check process rfd with pidfile /var/run/rfd.pid
     stop = "/etc/init.d/S61rfd stop"
     restart = "/etc/init.d/S61rfd restart"
     if not exist for 1 cycles then restart
-    if failed port 32001 for 5 cycles then restart
+    if failed port 32001 for 20 cycles then restart
     if 1 restart within 1 cycles then
       exec "/bin/triggerAlarm.tcl 'rfd restarted' 'WatchDog: rfd-restart' true"
     if filedescriptors > 95% for 5 cycles then
@@ -215,10 +197,11 @@ check process HMIPServer with pidfile /var/run/HMIPServer.pid
     stop = "/etc/init.d/S62HMServer stop"
     restart = "/etc/init.d/S62HMServer restart"
     if not exist for 1 cycles then restart
-    #if failed port 9293 for 5 cycles then restart
-    #if failed port 32010 for 5 cycles then restart
-    if failed port 39292 for 5 cycles then restart
-    #if failed port 43438 type udp for 5 cycles then restart
+    #if failed port 9293 for 20 cycles then restart
+    #if failed port 32010 for 20 cycles then restart
+    if failed port 39292 for 20 cycles then restart
+    #if failed port 43438 type udp for 20 cycles then restart
+    #if failed port 54841 type udp for 20 cycles then restart
     if 1 restart within 1 cycles then
       exec "/bin/triggerAlarm.tcl 'HMIPServer restarted' 'WatchDog: hmipserver-restart' true"
     if filedescriptors > 95% for 5 cycles then
@@ -232,9 +215,9 @@ check process ReGaHss with pidfile /var/run/ReGaHss.pid
     stop = "/etc/init.d/S70ReGaHss stop"
     restart = "/etc/init.d/S70ReGaHss restart"
     if not exist for 1 cycles then restart
-    if failed port 8183 protocol http for 5 cycles then restart
-    if failed port 31999 for 5 cycles then restart
-    if failed port 1998 type udp for 5 cycles then restart
+    if failed port 8183 protocol http for 20 cycles then restart
+    if failed port 31999 for 20 cycles then restart
+    if failed port 1998 type udp for 20 cycles then restart
     if 1 restart within 1 cycles then
       exec "/bin/triggerAlarm.tcl 'ReGaHss restarted' 'WatchDog: regahss-restart' true"
     if filedescriptors > 95% for 5 cycles then
@@ -326,6 +309,14 @@ check program hb_rf_eth-CheckEnabled with path "/usr/bin/test -e /etc/config/hb_
     group homematic
     if status != 0 for 1 cycles then unmonitor
 
+# check if a copro exists and if so we perform a regular check
+check program coProcessorCheck with path "/bin/checkCoProcessor.sh"
+    group homematic
+    if status = 2 then
+      exec /bin/sh -c "/bin/triggerAlarm.tcl 'RF-Module/Co-Processor connection lost' 'WatchDog: copro-lost' true"
+      repeat every 5 cycles
+    if status = 1 for 1 cycles then unmonitor
+
 # check if a pi4 with usb3+gpio rf module is used
 check program rpi4usb3Check with path "/bin/checkRpi4Usb3.sh"
     group system
@@ -358,6 +349,25 @@ check network tailscale0 interface tailscale0
 
 # check if tailscale is enabled at all
 check program tailscaleEnabled with path "/usr/bin/test -f /etc/config/tailscaleEnabled"
+    group system
+    if status != 0 for 1 cycles then unmonitor
+
+# ha-proxy monitoring
+check process ha-proxy with pidfile /var/run/ha-proxy.pid
+    group system
+    start = "/etc/init.d/S51ha-proxy start"
+    stop = "/etc/init.d/S51ha-proxy stop"
+    restart = "/etc/init.d/S51ha-proxy restart"
+    if not exist for 1 cycles then restart
+    if failed port 8099 for 5 cycles then restart
+    if 1 restart within 1 cycles then
+      exec "/bin/triggerAlarm.tcl 'ha-proxy restarted' 'WatchDog: ha-proxy-restart' true"
+    if filedescriptors > 95% for 5 cycles then
+      exec "/bin/triggerAlarm.tcl 'ha-proxy: high filedescriptor usage (>95%)' 'WatchDog: ha-proxy-highfd' true"
+    depends on ha-proxyEnabled
+
+# check if ha-proxyEnabled is enabled at all
+check program ha-proxyEnabled with path "/bin/grep -q 'HM_RUNNING_IN_HA=' /var/hm_mode"
     group system
     if status != 0 for 1 cycles then unmonitor
 

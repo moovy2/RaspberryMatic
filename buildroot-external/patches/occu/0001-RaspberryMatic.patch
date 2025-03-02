@@ -49,7 +49,7 @@
                  # The available version will be set further down with "jQuery('#availableSWVersion').html(homematic.com.getLatestVersion());"
                }
              }
-+            if {[get_platform] != "oci"} {
++            if {[get_platform] != "oci" && [get_platform] != "lxc"} {
              table_row {
                table_data {align="left"} {colspan="3"} {
                  #puts "[bold "Software-Update durchf�hren"]"
@@ -71,7 +71,7 @@
                        }
                      }
                    }
-@@ -465,30 +466,12 @@
+@@ -465,30 +466,18 @@
                  puts "\${dialogSettingsCMLblPerformSoftwareUpdateStep4}"
                }
              }
@@ -93,6 +93,12 @@
 -              set msg " \${dialogSettingsCMHintSoftwareUpdate4a} $bat_level%. "
 -              append msg  \${dialogSettingsCMHintSoftwareUpdate4b}
 -              li $msg
++            } else {
++              table_row {
++                table_data {align="left"} {colspan="3"} {
++                  puts "<br/>\${dialogSettingsCMLblPerformSoftwareUpdateVirt}"
++                }
++              }
              }
            }
 -
@@ -108,7 +114,7 @@
        table_row {class="CLASS20902 j_noForcedUpdate j_fwUpdateOnly"} {
 --- occu/WebUI/www/config/cp_network.cgi.orig
 +++ occu/WebUI/www/config/cp_network.cgi
-@@ -322,6 +322,7 @@
+@@ -225,6 +225,7 @@
                  cgi_text hostname=$hostname {id="text_hostname"}
                }
              }
@@ -116,7 +122,7 @@
              table_row {
                set checked ""
                if {! $dhcp} { set checked "checked=true" }
-@@ -412,6 +413,7 @@
+@@ -315,6 +316,7 @@
                }
  
              }
@@ -124,7 +130,7 @@
            }
          }
          table_data {class="CLASS21113"} {align="left"} {
-@@ -604,12 +606,21 @@
+@@ -440,12 +442,21 @@
        OnOK = function() {
          var pb = "action=save_settings";
          pb += "&hostname="+document.getElementById("text_hostname").value;
@@ -146,7 +152,7 @@
          
          var opts = {
            postBody: pb,
-@@ -710,7 +721,9 @@
+@@ -546,7 +557,9 @@
          },timeDelay);
        };
      }
@@ -162,7 +168,7 @@
                        puts "."
                        cgi_text year=$year {size="4"} {maxlength="4"} {id="text_year"}
                      }
-+                    if {[get_platform] != "oci"} {
++                    if {[get_platform] != "oci" && [get_platform] != "lxc"} {
                      table_data {align="left"} {
                        division {class="popupControls CLASS21506"} {
                          division {class="CLASS21507"} {onClick="apply_time()"} {
@@ -172,7 +178,7 @@
                      }
 +                    }
                    }
-+                  if {[get_platform] != "oci"} {
++                  if {[get_platform] != "oci" && [get_platform] != "lxc"} {
                    table_row {
                      table_data {colspan="2"} {}
                      table_data {align="left"} {class="CLASS21510"} {
@@ -187,7 +193,7 @@
            }
          }
        }
-+      if {[get_platform] != "oci"} {
++      if {[get_platform] != "oci" && [get_platform] != "lxc"} {
        table_row {class="CLASS21502"} {
          table_data {class="CLASS21503"} {
            #puts "NTP-Server"
@@ -221,7 +227,7 @@
  # set HOMEMATIC_URL "http://www.homematic.com"
  set HOMEMATIC_URL "http://www.eq-3.de"
  set HOMEMATIC_IP_URL "https://www.homematic-ip.com"
-@@ -19,13 +19,113 @@
+@@ -19,13 +19,145 @@
  set LANGUAGE "de"
  set CUR_YEAR [clock format [clock seconds] -format %Y]
  
@@ -265,6 +271,9 @@
 +
 +  # get all variables from /VERSION into ver array
 +  loadVarsFromShellFile /VERSION ver
+ 
++  # get all variables from /etc/config/netconfig into net array
++  loadVarsFromShellFile /etc/config/netconfig net
 +
 +  set SERIAL ""
 +  catch {set SERIAL $hm(HM_HMIP_SERIAL)}
@@ -283,16 +292,28 @@
 +  set HWMODEL "n/a"
 +  if {[file exist /proc/device-tree/model]} {
 +    execCmd HWMODEL {exec cat /proc/device-tree/model}
++  } elseif {[file exist /sys/devices/virtual/dmi/id/board_vendor]} {
++    execCmd VENDOR {exec cat /sys/devices/virtual/dmi/id/board_vendor}
++    set NAME ""
++    if {[file exist /sys/devices/virtual/dmi/id/board_name]} {
++      execCmd NAME {exec cat /sys/devices/virtual/dmi/id/board_name}
++    }
++    set HWMODEL "$VENDOR $NAME"
 +  } elseif {[file exist /sys/devices/virtual/dmi/id/sys_vendor]} {
 +    execCmd VENDOR {exec cat /sys/devices/virtual/dmi/id/sys_vendor}
-+    set PNAME ""
++    set NAME ""
 +    if {[file exist /sys/devices/virtual/dmi/id/product_name]} {
-+      execCmd PNAME {exec cat /sys/devices/virtual/dmi/id/product_name}
++      execCmd NAME {exec cat /sys/devices/virtual/dmi/id/product_name}
 +    }
-+    set HWMODEL "$VENDOR $PNAME"
++    set HWMODEL "$VENDOR $NAME"
++  } else {
++    execCmd MODEL {exec grep ^Model /proc/cpuinfo | cut -d: -f2 | xargs}
++    if {$MODEL != ""} {
++      set HWMODEL $MODEL
++    }
 +  }
- 
-+  execCmd CPUMODEL {exec lscpu | grep "Model name:" | cut -d: -f2 | xargs echo -n}
++
++  execCmd CPUMODEL {exec lscpu | grep -m1 "^Model name:" | cut -d: -f2 | xargs echo -n}
 +  execCmd NUMCPU {exec nproc}
 +  execCmd LOADAVG {exec awk {{ printf $1 " " $2 " " $3 }} /proc/loadavg}
 +  execCmd MEM {exec free -h | grep Mem: | awk {{ print $2 }}}
@@ -300,9 +321,14 @@
 +  execCmd SWAPUSE {exec egrep "Swap(Total|Free)" /proc/meminfo | tr -d "\n" | awk {{ printf("%.1f %", 100-$4/$2*100) }}}
 +  execCmd UPTIME {exec awk {{s=int($1);d=int(s/86400);h=int(s % 86400/3600);m=int(s % 3600 / 60); printf "%d d, %d h %d min", d, h, m}} /proc/uptime}
 +  execCmd NTPOFFSET {exec /usr/bin/chronyc -n tracking | grep "Last offset" | awk {{ printf("%.3f ms", $4*1000) }}}
++  execCmd NTPSERVER {exec /usr/bin/chronyc -n tracking | grep "Reference ID" | awk -F "\[\(\)\]" {{ print $2 }}}
++  execCmd MAINETH {exec /sbin/ip -4 route get 1 | head -1 | awk {{ print $5 }}}
++  execCmd MAINHOSTNAME {exec /bin/hostname}
 +  catch {set OSTYPE [string trim [read_var /etc/os-release PRETTY_NAME] '"']}
 +  execCmd OSKERNEL "exec uname -s -r -m"
 +  set TCLVER [info patchlevel]
++  execCmd JAVAVER {exec 2>@stdout /opt/java/bin/java -version | head -1 | cut -d" -f2}
++  execCmd NODEVER {exec /usr/bin/node -v}
 +  execCmd TEMP {exec awk {{ printf("%.1f &deg;C", $1/1000) }} /sys/class/thermal/thermal_zone0/temp}
 +
 +  set STATUS ""
@@ -331,14 +357,26 @@
 +  } else {
 +    set STATUS "SD(0) $STATUS"
 +  }
-+  execCmd ROOTFSFREE {exec monit status rootfs | grep "space free total" | awk {{ print substr($0,index($0,$4)) }}}
-+  execCmd USERFSFREE {exec monit status userfs | grep "space free total" | awk {{ print substr($0,index($0,$4)) }}}
++  execCmd ROOTFSFREE {exec monit status rootfs | grep -m1 "space free for non superuser" | awk {{ print substr($0,index($0,$6)) }}}
++  execCmd ROOTFSTOTAL {exec monit status rootfs | grep -m1 "space total" | awk {{ print $3 " " $4 }}}
++  execCmd USERFSFREE {exec monit status userfs | grep -m1 "space free for non superuser" | awk {{ print substr($0,index($0,$6)) }}}
++  execCmd USERFSTOTAL {exec monit status userfs | grep -m1 "space total" | awk {{ print $3 " " $4 }}}
++  execCmd USBDEVFREE {exec monit status usb1 | grep -m1 "space free for non superuser" | awk {{ print substr($0,index($0,$6)) }}}
++  execCmd USBDEVTOTAL {exec monit status usb1 | grep -m1 "space total" | awk {{ print $3 " " $4 }}}
 +  execCmd STORAGEDEV {exec mountpoint -n /usr/local | awk {{ print $1 }} | xargs lsblk -l -n -o PKNAME -p}
 +  execCmd STORAGE "exec lsblk -l -n -o SIZE,MODEL,KNAME -d -p $STORAGEDEV"
++  set HMRF_DUTYCYCLE "n/a"
++  catch { set HMRF_DUTYCYCLE [exec /usr/bin/jq -r ".\[\] | select(.address == \"$hm(HM_HMRF_SERIAL)\") | .dutyCycle" /tmp/dutycycle.json] }
++  set HMRF_CARRIERSENSE "n/a"
++  catch { set HMRF_CARRIERSENSE [exec /usr/bin/jq -r ".\[\] | select(.address == \"$hm(HM_HMRF_SERIAL)\") | .carrierSense" /tmp/dutycycle.json] }
++  set HMIP_DUTYCYCLE "n/a"
++  catch { set HMIP_DUTYCYCLE [exec /usr/bin/jq -r ".\[\] | select(.address == \"$hm(HM_HMIP_SERIAL)\") | .dutyCycle" /tmp/dutycycle.json] }
++  set HMIP_CARRIERSENSE "n/a"
++  catch { set HMIP_CARRIERSENSE [exec /usr/bin/jq -r ".\[\] | select(.address == \"$hm(HM_HMIP_SERIAL)\") | .carrierSense" /tmp/dutycycle.json] }
  
    set sid ""
    catch {import sid}
-@@ -43,47 +143,78 @@
+@@ -43,47 +175,86 @@
        </script>
      }
    }
@@ -408,49 +446,57 @@
 +      puts "<td id='tdOnline' class='CLASS21301a'  style='text-align:center;'>"
 +        puts "<h1 class='helpTitle'><u>CCU Hardware Info</u></h1>"
 +        puts "<div style='display: table; width: 100%;'>"
-+          putsVar "Serial Number" $SERIAL
 +          putsVar "Hardware Model" "$HWMODEL ($hm(HM_HOST))"
-+          putsVar "CPU / Memory" "$CPUMODEL ($NUMCPU), $MEM"
++          putsVar "CPU (Cores), Memory" "$CPUMODEL ($NUMCPU), $MEM"
 +          putsVar "Storage" "$STORAGE"
 +          putsVar "Real-Time-Clock" $hm(HM_RTC)
++          putsVar "Serial Number" $SERIAL
 +        puts "</div>"
 +        puts "<h1 class='helpTitle'><u>CCU Software Info</u></h1>"
 +        puts "<div style='display: table; width: 100%;'>"
 +          putsVar "Product" "$ver(PRODUCT) ($ver(VERSION))"
 +          putsVar "ReGaHss" [rega dom.BuildLabel()]
-+          putsVar "TCL" "$TCLVER"
++          putsVar "Engines" "Tcl ($TCLVER), Java ($JAVAVER), NodeJS ($NODEVER)"
 +          putsVar "Status" $STATUS
 +        puts "</div>"
 +        puts "<h1 class='helpTitle'><u>Operating System Info</u></h1>"
 +        puts "<div style='display: table; width: 100%;'>"
-+          putsVar "OS Type/Kernel" "$OSTYPE ($OSKERNEL)"
++          putsVar "OS Type (Kernel)" "$OSTYPE ($OSKERNEL)"
 +          putsVar "Uptime" $UPTIME
 +          putsVar "Load Average" $LOADAVG
 +          putsVar "System Temperature" $TEMP
-+          putsVar "Memory / Swap Utilization" "$MEMUSE / $SWAPUSE"
-+          putsVar "NTP Offset" $NTPOFFSET
-+          putsVar "rootfs / userfs Free Space" "$ROOTFSFREE / $USERFSFREE"
++          putsVar "Memory, Swap Utilization" "$MEMUSE, $SWAPUSE"
++          putsVar "NTP Offset (Server)" "$NTPOFFSET ($NTPSERVER)"
++          putsVar "rootfs Free Space" "$ROOTFSFREE / $ROOTFSTOTAL"
++          putsVar "userfs Free Space" "$USERFSFREE / $USERFSTOTAL"
++          putsVar "USB Free Space" "$USBDEVFREE / $USBDEVTOTAL"
++          putsVar "IP address" "$net(CURRENT_IP) ($MAINETH, $net(MODE))"
++          putsVar "Gateway (Netmask)" "$net(CURRENT_GATEWAY) ($net(CURRENT_NETMASK))"
++          putsVar "Nameservers" "$net(CURRENT_NAMESERVER1), $net(CURRENT_NAMESERVER2)"
++          putsVar "Hostname" "$MAINHOSTNAME"
 +        puts "</div>"
 +        puts "<h1 class='helpTitle'><u>homematicIP-RF (HmIP) Info</u></h1>"
 +        puts "<div style='display: table; width: 100%;'>"
-+          putsVar "RF-Module/Firmware" "$hm(HM_HMIP_DEV) ($hm(HM_HMIP_VERSION))"
++          putsVar "RF-Module (Firmware)" "$hm(HM_HMIP_DEV) ($hm(HM_HMIP_VERSION))"
 +          putsVar "Device-Node" "$hm(HM_HMIP_DEVNODE) ($hm(HM_HMIP_DEVTYPE))"
 +          putsVar "Address" "$hm(HM_HMIP_ADDRESS) ($hm(HM_HMIP_ADDRESS_ACTIVE))"
 +          putsVar "SGTIN" $hm(HM_HMIP_SGTIN)
 +          putsVar "Serial" $hm(HM_HMIP_SERIAL)
++          putsVar "DutyCycle, CarrierSense" "$HMIP_DUTYCYCLE %, $HMIP_CARRIERSENSE %"
 +        puts "</div>"
 +        puts "<h1 class='helpTitle'><u>HomeMatic-RF (HmRF) Info</u></h1>"
 +        puts "<div style='display: table; width: 100%;'>"
-+          putsVar "RF-Module/Firmware" "$hm(HM_HMRF_DEV) ($hm(HM_HMRF_VERSION))"
++          putsVar "RF-Module (Firmware)" "$hm(HM_HMRF_DEV) ($hm(HM_HMRF_VERSION))"
 +          putsVar "Device-Node" "$hm(HM_HMRF_DEVNODE) ($hm(HM_HMRF_DEVTYPE))"
 +          putsVar "Address" "$hm(HM_HMRF_ADDRESS) ($hm(HM_HMRF_ADDRESS_ACTIVE))"
 +          putsVar "Serial" $hm(HM_HMRF_SERIAL)
++          putsVar "DutyCycle, CarrierSense" "$HMRF_DUTYCYCLE %, $HMRF_CARRIERSENSE %"
 +        puts "</div>"
 +      puts "</td>"
  
    puts "</table>"
  
-@@ -124,7 +255,7 @@
+@@ -124,7 +295,7 @@
      puts "\}"
  
      puts "loadExtHelp = function()\{"
@@ -580,7 +626,7 @@
  
      <link rel="stylesheet" type="text/css" href="/webui/css/extern/nfs_datepicker.css" />
      <link rel="stylesheet" type="text/css" href="/webui/css/extern/jquery.powertip.css" />
-@@ -69,7 +69,8 @@
+@@ -72,7 +72,8 @@
        /*########################################################################*/
  
        PLATFORM = "Central";
@@ -590,7 +636,7 @@
  
        /**
         * Flags
-@@ -193,7 +194,7 @@
+@@ -198,7 +199,7 @@
      <div id="webuiloader_wrapper">
        <div id="webuiloader_background">
          <div id="webuiloader">
@@ -628,22 +674,15 @@
 +</html>
 --- occu/WebUI/www/webui/js/lang/de/translate.lang.extension.js.orig
 +++ occu/WebUI/www/webui/js/lang/de/translate.lang.extension.js
-@@ -1225,7 +1225,7 @@
-     "lblSwitchLightOn" : "Licht einschalten",
-     "lblSwitchLightOff" : "Licht ausschalten",
- 
+@@ -816,7 +816,7 @@
+     "btnGarageClose" : "Schlie%DFen",
+     "btnGarageVent" : "L%FCften",
+     "btnGarageStop" : "Stopp",
 -    "dialogSettingsUSBStorageSettings" : "Externer USB-Speicher",
 +    "dialogSettingsUSBStorageSettings" : "Externer Speicher",
      "dialogSettingsStorageHintUSBStorageP1" : "Die Sicherung der Daten umfasst nur die Diagramme.",
- 
- 
-@@ -1601,4 +1601,4 @@
- });
- 
- langJSON.de.hintActivateDetectorSelfTest += langJSON.de.checkSmokeDetectorSelfTest;
--langJSON.de.hintReInclusionDetectorFailed += langJSON.de.checkSmokeDetectorSelfTest;
-\ No newline at end of file
-+langJSON.de.hintReInclusionDetectorFailed += langJSON.de.checkSmokeDetectorSelfTest;
+     "dialogSettingsSecurityTDAuth" : "Authentifizierung",
+     "dialogSettingsSecurityLblActivateAuthRemoteXML" : "Authentifizierung aktiv: ",
 --- occu/WebUI/www/webui/js/lang/de/translate.lang.js.orig
 +++ occu/WebUI/www/webui/js/lang/de/translate.lang.js
 @@ -1,8 +1,8 @@
@@ -658,7 +697,15 @@
      "BidCosRF" : "Homematic Funk",
      "BidCosWired" : "Homematic Wired",
      "VirtualDevices" : "VirtualDevices",
-@@ -483,6 +483,7 @@
+@@ -463,6 +463,7 @@
+     "dialogSettingsCMLblActualSoftwareVersion" : "Aktuelle Software-Version:",
+     "dialogSettingsCMLblAvailableSoftwareVersion" : "Verf%FCgbare Software-Version:",
+     "dialogSettingsCMLblPerformSoftwareUpdate" : "Software-Update durchf%FChren",
++    "dialogSettingsCMLblPerformSoftwareUpdateVirt" : "Wenn Sie ein Update der RaspberryMatic Version durchf%FChren wollen, so k%F6nnen Sie dies im Kontext ihrer eingesetzten Virtualisierungsl%F6sung (HomeAssistant, Docker, LXC, etc.) durchf%FChren. Bitte konsultieren Sie hierzu die entsprechende RaspberryMatic Dokumentation.",
+     "dialogSettingsCMLblPerformSoftwareUpdateStep1" : "Schritt 1: Neue Software herunterladen",
+     "dialogSettingsCMLblPerformSoftwareUpdateStep2" : "Schritt 2: Heruntergeladene Software ausw%E4hlen",
+     "dialogSettingsCMLblPerformSoftwareUpdateStep3" : "Schritt 3: Software auf " + HMIdentifier.de.CCUShortName + " laden",
+@@ -486,6 +487,7 @@
      "dialogSettingsCMHintSoftwareUpdate3" : "F%FChren Sie vor dem Update eine Datensicherung durch.",
      "dialogSettingsCMHintSoftwareUpdate4a" : "Der Ladezustand der Batterien betr%E4gt nur noch ",
      "dialogSettingsCMHintSoftwareUpdate4b" : "Um einem Datenverlust durch Ausfall der Stromversorgung vorzubeugen, empfehlen wir, die Batterien vor dem Update zu erneuern.",
@@ -681,16 +728,16 @@
  
 --- occu/WebUI/www/webui/js/lang/en/translate.lang.extension.js.orig
 +++ occu/WebUI/www/webui/js/lang/en/translate.lang.extension.js
-@@ -1218,7 +1218,7 @@
-     "lblSwitchLightOn" : "Switching light on",
-     "lblSwitchLightOff" : "Switching light off",
- 
+@@ -813,7 +813,7 @@
+     "btnGarageClose" : "Closing",
+     "btnGarageVent" : "Ventilation",
+     "btnGarageStop" : "Stop",
 -    "dialogSettingsUSBStorageSettings" : "External USB memory",
-+    "dialogSettingsUSBStorageSettings" : "External disk space",
++    "dialogSettingsUSBStorageSettings" : "External storage",
      "dialogSettingsStorageHintUSBStorageP1" : "Storage of data only includes the diagrams.",
- 
- 
-@@ -1587,4 +1587,4 @@
+     "dialogSettingsSecurityTDAuth" : "Authentication",
+     "dialogSettingsSecurityLblActivateAuthRemoteXML" : "Authentication active: ",
+@@ -1073,4 +1073,4 @@
  });
  
  langJSON.en.hintActivateDetectorSelfTest += langJSON.en.checkSmokeDetectorSelfTest;
@@ -710,8 +757,16 @@
 +    "CCUShortName" : "RaspMatic",
      "BidCosRF" : "Homematic RF",
      "BidCosWired" : "BidCos-Wired",
-     "HmIPRF" : "HmIP-RF",
-@@ -477,6 +477,7 @@
+     "BidCosRF-Filter" : "BidCos-RF",
+@@ -462,6 +462,7 @@
+     "dialogSettingsCMLblActualSoftwareVersion" : "Current software version:",
+     "dialogSettingsCMLblAvailableSoftwareVersion" : "Available software version:",
+     "dialogSettingsCMLblPerformSoftwareUpdate" : "Perform software update",
++    "dialogSettingsCMLblPerformSoftwareUpdateVirt" : "If you want to update the RaspberryMatic version, you can do this in the context of the virtualization solution you are using (HomeAssistant, Docker, LXC, etc.). Please consult the corresponding RaspberryMatic documentation.",
+     "dialogSettingsCMLblPerformSoftwareUpdateStep1" : "Step 1: Download new software",
+     "dialogSettingsCMLblPerformSoftwareUpdateStep2" : "Step 2: Select downloaded software",
+     "dialogSettingsCMLblPerformSoftwareUpdateStep3" : "Step 3: Upload software to " + HMIdentifier.en.CCUShortName,
+@@ -485,6 +486,7 @@
      "dialogSettingsCMHintSoftwareUpdate3" : "Please perform a data backup before starting the update.",
      "dialogSettingsCMHintSoftwareUpdate4a" : "The charging status the batteries is only at ",
      "dialogSettingsCMHintSoftwareUpdate4b" : "To prevent from data loss due to power failure, it is recommended to replace the batteries before starting the update.",
@@ -734,7 +789,7 @@
  
 --- occu/WebUI/www/webui/webui.js.orig
 +++ occu/WebUI/www/webui/webui.js
-@@ -19466,12 +19466,12 @@
+@@ -23415,16 +23415,16 @@
  
     // WebUI-Version
    showCurrentFirmware: function() {
@@ -742,35 +797,43 @@
 +    jQuery("#currentFirmware").text(WEBUI_VERSION);
  
 -    homematic("Interface.getDeviceDescription", {"interface": "BidCos-RF", "address": "BidCoS-RF"}, function(result) {
--      WEBUI_VERSION = result.firmware;
+-      if (result != null) {
+-        WEBUI_VERSION = result.firmware;
+-      } else {
+-        WEBUI_VERSION = "0.0.0";
+-      }
 -      jQuery("#currentFirmware").text(WEBUI_VERSION);
 -    });
 +    //homematic("Interface.getDeviceDescription", {"interface": "BidCos-RF", "address": "BidCoS-RF"}, function(result) {
-+    //  WEBUI_VERSION = result.firmware;
++    //  if (result != null) {
++    //    WEBUI_VERSION = result.firmware;
++    //  } else {
++    //    WEBUI_VERSION = "0.0.0";
++    //  }
 +    //  jQuery("#currentFirmware").text(WEBUI_VERSION);
 +    //});
- 
    },
  
-@@ -23555,7 +23555,7 @@
+   /*evalVersionAGreaterThanB: function(a, b) {
+@@ -27537,7 +27537,7 @@
    {
      this.m_ccuProduct = getProduct();
      this.preURL = (this.m_ccuProduct < 3) ? "" : "ccu3-";
 -    this.m_product ="HM-CCU" + this.m_ccuProduct;
 +    this.m_product = "HM-RASPBERRYMATIC";
      this.m_URLServer = (isHTTPS) ? "https://"+this.preURL+"update.homematic.com:8443" : "http://"+this.preURL+"update.homematic.com";
+     this.m_fieldTestURLServer = (isHTTPS) ? "https://fieldtest-ccu3-update.homematic.com" : "http://fieldtest-ccu3-update.homematic.com";
  
-     var serial = homematic("CCU.getSerial");
-@@ -23565,7 +23565,7 @@
+@@ -27548,7 +27548,7 @@
      var script = document.createElement("script");
      script.id = "homematic_com_script";
      script.type = "text/javascript";
--    script.src = this.m_URLServer + "/firmware/download?cmd=js_check_version&version="+WEBUI_VERSION+"&product="+this.m_product+"&serial=" + serial;
+-    script.src = this.m_URLServer + "/firmware/download?cmd=js_check_version&version="+WEBUI_VERSION+"&product="+this.m_product+"&serial=" + this.serial;
 +    script.src = "https://raspberrymatic.de/LATEST-VERSION.js?v=" + WEBUI_VERSION + "&p=" + PRODUCT;
      $("body").appendChild(script);
    },
  
-@@ -28924,11 +28924,11 @@
+@@ -32921,11 +32921,11 @@
        {
          if( $("headerLogo").src.indexOf("_red") >= 0 )
          {
@@ -784,7 +847,7 @@
          }
        }
      },
-@@ -28943,12 +28943,12 @@
+@@ -32940,12 +32940,12 @@
  
  SwitchOnFlashLight = function()
  {

@@ -1,11 +1,11 @@
 #!/bin/sh
-# shellcheck shell=dash
+# shellcheck shell=dash disable=SC3010 source=/dev/null
 #
 # script that will create CCU compatible backups in a specified
 # directory with taking care of keeping a certain amount of
 # backups and deleting old ones.
 #
-# Copyright (c) 2018-2021 Jens Maus <mail@jens-maus.de>
+# Copyright (c) 2018-2024 Jens Maus <mail@jens-maus.de>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,33 +31,41 @@
 #
 
 # skip the script if /etc/config/NoCronBackup exists
-[ -e /etc/config/NoCronBackup ] && exit 0
+[[ -e /etc/config/NoCronBackup ]] && exit 0
+
+# read in /var/hm_mode
+[[ -r /var/hm_mode ]] && . /var/hm_mode
 
 # set default values
-BACKUPDIR=/media/usb0/backup
 MAXBACKUPS=30
-
-# check for external default parameters
-[ -f /etc/config/CronBackupPath ] && BACKUPDIR=$(cat /etc/config/CronBackupPath)
-[ -f /etc/config/CronBackupMaxBackups ] && MAXBACKUPS=$(cat /etc/config/CronBackupMaxBackups)
-
-# cmdline parameter overrules everything
-[ -n "${1}" ] && BACKUPDIR=${1}
-[ -n "${2}" ] && MAXBACKUPS=${2}
-
-# check if the parent directory of BACKUPDIR exists
-# or not
-if [ ! -e "$(dirname "${BACKUPDIR}")" ]; then
-  exit 0
+if [[ -n "${HM_RUNNING_IN_HA}" ]]; then
+  BACKUPDIR=/backup/raspberrymatic
+else
+  BACKUPDIR=/media/usb0/backup
 fi
 
-# check that the parent directory is not a tmpfs
-if [ "$(stat -f -c%T "$(dirname "${BACKUPDIR}")")" = "tmpfs" ]; then
+# check for external default parameters
+[[ -f /etc/config/CronBackupPath ]] && BACKUPDIR=$(cat /etc/config/CronBackupPath)
+[[ -f /etc/config/CronBackupMaxBackups ]] && MAXBACKUPS=$(cat /etc/config/CronBackupMaxBackups)
+
+# cmdline parameter overrules everything
+[[ -n "${1}" ]] && BACKUPDIR=${1}
+[[ -n "${2}" ]] && MAXBACKUPS=${2}
+
+# get additional info on backup dir
+BACKUPREALPATH="$(realpath "${BACKUPDIR}" 2>/dev/null)"
+
+# prevent that the user is messing up things by
+# specifying an incorrect BACKUPDIR
+if [[ -z "${BACKUPREALPATH}" ]] || # parent of backupdir does not exit
+   [[ "${BACKUPREALPATH}" = "/usr/local" ]] || # not /usr/local
+   [[ "$(findmnt -n -o TARGET --target "${BACKUPDIR}")" = "/" ]] || # not on rootfs
+   [[ "$(stat -f -c%T "$(dirname "${BACKUPDIR}")")" = "tmpfs" ]]; then # not on tmpfs
   exit 0
 fi
 
 # if BACKUPDIR does not exist, create it
-if [ ! -e "${BACKUPDIR}" ]; then
+if [[ ! -e "${BACKUPDIR}" ]]; then
   if ! mkdir "${BACKUPDIR}"; then
     /bin/triggerAlarm.tcl "cronBackup: Could not create ${BACKUPDIR}" 'WatchDog: cronbackup-create' true
     exit 1
@@ -66,7 +74,7 @@ fi
 
 # make sure .nobackup exists in BACKUPDIR so
 # that this dir won't be part of the backup itself
-if [ ! -f "${BACKUPDIR}/.nobackup" ]; then
+if [[ ! -f "${BACKUPDIR}/.nobackup" ]]; then
   touch "${BACKUPDIR}/.nobackup"
 fi
 
@@ -78,11 +86,11 @@ fi
 
 # check how many backup files are actually in BACKUPDIR and cleanup
 # until we reach MAXBACKUPS
-if [ "${MAXBACKUPS}" -gt 0 ]; then
+if [[ "${MAXBACKUPS}" -gt 0 ]]; then
   # shellcheck disable=SC2012
   NUMFILES=$(ls -dt "${BACKUPDIR}"/*.sbk | wc -l)
   DELFILES=$((NUMFILES-MAXBACKUPS))
-  if [ ${DELFILES} -gt 0 ]; then
+  if [[ ${DELFILES} -gt 0 ]]; then
     # shellcheck disable=SC2012
     ls -dt "${BACKUPDIR}"/*.sbk | tail -n "${DELFILES}" | xargs rm -f
   fi
