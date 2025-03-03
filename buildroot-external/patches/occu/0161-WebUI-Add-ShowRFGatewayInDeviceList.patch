@@ -105,7 +105,7 @@
        if {$redirect_url == "IC_SETPROFILES" || $redirect_url == "IC_LINKPEERLIST"} then { 
          #puts "  setPath(\"<span onclick='WebUI.enter(LinksAndProgramsPage);'>Programme &amp; Verkn&uuml;pfungen</span> &gt; <span onclick='WebUI.enter(LinkListPage);'>Direkte Verkn&uuml;pfungen</span> &gt; Ger&auml;te- / Kanalparameter einstellen\");"
          puts "  setPath(\"<span onclick='WebUI.enter(LinksAndProgramsPage);'>\"+translateKey('menuProgramsLinksPage')+\"</span> &gt; <span onclick='WebUI.enter(LinkListPage);'>\"+translateKey('submenuDirectLinks')+\"</span> &gt; \" + translateKey('setDeviceAndChannelParams'));"
-@@ -1176,13 +1263,17 @@
+@@ -1213,13 +1300,17 @@
    set SENTRY(IMAGE)       "&nbsp;"
    set SENTRY(DESCRIPTION) $dev_descr(TYPE)
    set SENTRY(ADDRESS)     $address
@@ -124,7 +124,7 @@
    set EASYLINKMODE [get_user_easylinkmode]
    set SENTRY(IMAGE) "<div id=\"picDiv_thumb\" class=\"CLASS22005\" onmouseover=\"picDivShow(jg_250, '$dev_descr(TYPE)', 250, '-1', this);\" onmouseout=\"picDivHide(jg_250);\"></div>"
    append SENTRY(IMAGE) "<script type=\"text/javascript\">"
-@@ -1328,12 +1419,12 @@
+@@ -1365,12 +1456,12 @@
    puts "<TBODY>"
        
    puts "<tr>"
@@ -144,7 +144,7 @@
      puts "<td>$SENTRY(RESTOREDEVPARAMS)</td>"
 --- occu/WebUI/www/webui/webui.js.orig
 +++ occu/WebUI/www/webui/webui.js
-@@ -491,7 +491,7 @@
+@@ -515,7 +515,7 @@
            <td class=\"DeviceListThumbnail\" ><div id=\"${PREFIX}${device.id}Thumbnail\" class=\"thumbnail\" onmouseover=\"picDivShow(jg_250, \'${device.deviceType.id}\', 250, \'\', this);\" onmouseout=\"picDivHide(jg_250);\">${device.getThumbnailHTML()}<\/div><\/td>\n
            <td class=\"DeviceListCell\" name=\"${device.typeDescription}\" >${device.typeDescription}<\/td>\n
            <td class=\"DeviceListCell\" >${device.address}${device.rfAddress}<\/td>\n
@@ -153,7 +153,7 @@
            <td class=\"DeviceListCell j_chMode\" >{for name in device.modes}${name}<br \/>{forelse}&#160;{\/for}<\/td>\n
            <td class=\"DeviceListCell j_functions\" >{for subsection in device.subsections}${subsection.name}<br \/>{forelse}&#160;{\/for}<\/td>\n
            <td class=\"DeviceListCell j_rooms\" >{for room in device.rooms}${room.name}<br \/>{forelse}&#160;{\/for}<\/td>\n
-@@ -11017,6 +11017,7 @@
+@@ -11914,6 +11914,7 @@
        // End debugging
  
        this.interfaceName = data["interface"];
@@ -161,7 +161,7 @@
        this.isReadyConfig = data["isReady"];
        this.enabledServiceMsg = (data["enabledServiceMsg"] == "true") ? true : false;
        this.thumbnailHTML = deviceType.getThumbnailHTML();
-@@ -11232,6 +11233,13 @@
+@@ -12129,6 +12130,13 @@
      this.rssiPeerColor = getColorCode(this.RSSI_PEER);
    },
  
@@ -175,19 +175,28 @@
    /**
     * Legt den Namen des Geräts fest.
     **/
-@@ -11597,11 +11605,50 @@
-     this.channels = {};
-     this.groups   = {};
+@@ -12341,6 +12349,7 @@
+     {
+       var id = data["id"];
+       device = this.devices[id];
++      data["interface_displayname"] = this.loadIfDisplayName(data);
  
-+    
-+    var BidCosGateways=[];
-+    var allBidCosDevsList=[];
+       if (typeof(device) != "undefined") 
+       {
+@@ -12453,6 +12462,49 @@
+     return singles;
+   },
+   
++  loadBidCosGateways: function()
++  {
++    this.BidCosGateways=[];	   
++    this.allBidCosDevsList = homematic("Interface.listDevices", {"interface": "BidCos-RF"});
 +    var rfGateways = homematic("BidCoS_RF.getConfigurationRF");
 +    if (rfGateways) {
 +      for (i = 0, len = rfGateways.interfaces.length; i < len; i++) {
 +        var gateway = rfGateways.interfaces[i];
 +        if (gateway.type === globalLGWTypes.HMLGW2) {
-+          BidCosGateways.push(
++          this.BidCosGateways.push(
 +           new BidcosRfPage.Gateway()
 +            .setGatewayClass("RF")
 +            .setType(gateway.type)
@@ -198,35 +207,41 @@
 +          );
 +        }
 +      }
-+      BidCosGateways.sort((a, b) => a.m_userName.localeCompare(b.m_userName, undefined, { numeric: true, sensitivity: 'base' }));
-+      for (i = 0, len = BidCosGateways.length; i < len; i++) {
-+        DeviceListPage.INTERFACES.push({id:BidCosGateways[i].m_userName, name:BidCosGateways[i].m_userName});
++      this.BidCosGateways.sort((a, b) => a.m_userName.localeCompare(b.m_userName, undefined, { numeric: true, sensitivity: 'base' }));
++      for (i = 0, len = this.BidCosGateways.length; i < len; i++) {
++        DeviceListPage.INTERFACES.push({id:this.BidCosGateways[i].m_userName, name:this.BidCosGateways[i].m_userName});
 +      }
-+      allBidCosDevsList = homematic("Interface.listDevices", {"interface": "BidCos-RF"});
 +    }
-+    
-+
-     var self=this;
-     homematic("Device.listAllDetail", null, function(deviceList) {
-       // alert("after listAllDetail devices: " + deviceList);
-       jQuery.each(deviceList, function (index, data) {
-       // console.dir (data);
-+        data["interface_displayname"] = data["interface"];
-+        if ( allBidCosDevsList && rfGateways && data["interface"] === "BidCos-RF") {
-+          var idx = allBidCosDevsList.findIndex(({ address }) => address === data["address"]);
-+          if (idx > -1) {
-+            var _device= allBidCosDevsList[idx];
-+            var gwIdx = BidCosGateways.findIndex(({ m_address }) => m_address === _device["interface"]);
-+            if ( gwIdx > -1 ) {
-+              data["interface_displayname"] = (BidCosGateways[gwIdx].m_userName.length > 0) ?  BidCosGateways[gwIdx].m_userName : _device["interface"]; 
-+            }
-+          }
++  },
++  
++  loadIfDisplayName: function(data) 
++  {
++    if (typeof this.BidCosGateways === 'undefined') { this.loadBidCosGateways(); }
++    var dispname = data["interface"];
++    if ( this.allBidCosDevsList && this.BidCosGateways.length > 0 && data["interface"] === "BidCos-RF") {
++      var idx = this.allBidCosDevsList.findIndex(({ address }) => address === data["address"]);
++      if (idx > -1) {
++        var _device= this.allBidCosDevsList[idx];
++        var gwIdx = this.BidCosGateways.findIndex(({ m_address }) => m_address === _device["interface"]);
++        if ( gwIdx > -1 ) {
++          dispname = (this.BidCosGateways[gwIdx].m_userName.length > 0) ?  this.BidCosGateways[gwIdx].m_userName : _device["interface"]; 
 +        }
-+
-         if (data !== null && (data["type"] != typeCCU1))
++      }
++    }
++    return dispname;
++  },
+   /**
+    * Lädt die Geräteliste erneut
+    **/
+@@ -12503,6 +12555,7 @@
          {
            var id = data["id"];
-@@ -11665,6 +11712,16 @@
+           var device = self.devices[id];
++          data["interface_displayname"] =  self.loadIfDisplayName(data);
+ 
+           if (typeof(device) != "undefined")
+           {
+@@ -12562,6 +12615,16 @@
        }
      });
    },
@@ -243,7 +258,7 @@
  
    /**
     * Startet die Akualisierung eines Geräts.
-@@ -22178,7 +22235,7 @@
+@@ -25606,7 +25669,7 @@
              (this.TypeNameFilter.match(device.typeName))                 &&
              (this.DescriptionFilter.match(translateKey(device.typeDescription)))       &&
              (this.AddressFilter.match(device.address))                   &&
@@ -252,7 +267,7 @@
              (this.ModeFilter.matchStringArray(device.modes)) &&
              (this.RoomFilter.matchArray(device.rooms))                   &&
              (this.FuncFilter.matchArray(device.subsections)));
-@@ -24410,6 +24467,7 @@
+@@ -27838,6 +27901,7 @@
        //jQuery("."+gateway.getAddress()).attr("class","bidcosrf_tablecell " + gateway.getAddress().replace(/\s+/g,""));
        this.setGateway(gateway.getAddress());
        this.setRoaming(roaming);

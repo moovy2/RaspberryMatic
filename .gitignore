@@ -1,5 +1,6 @@
 .DS_Store
 .*.swp
+.*.rej
 /build-*/
 /buildroot-????.??*
 /download
@@ -9,3 +10,7 @@
 /release/*.ova
 /release/*.tgz
 /release/*.sha256
+/release/*.mf
+/release/*.gz
+helm/raspberrymatic/charts/
+helm/raspberrymatic/Chart.lock

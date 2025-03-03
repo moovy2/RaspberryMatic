@@ -2,12 +2,13 @@
 
 <br/>
 
-**– The alternative/free operating system for your HomeMatic CCU**
+**– The alternative/free operating system for your homematicIP CCU**
 
 [![Current Release](https://img.shields.io/github/release/jens-maus/RaspberryMatic.svg)](https://github.com/jens-maus/RaspberryMatic/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/jens-maus/RaspberryMatic/latest/total.svg)](https://github.com/jens-maus/RaspberryMatic/releases/latest)
+[![DownloadsSnapshots](https://img.shields.io/github/downloads/jens-maus/RaspberryMatic/snapshots/total.svg)](https://github.com/jens-maus/RaspberryMatic/releases/snapshots)
 [![CI Build](https://github.com/jens-maus/RaspberryMatic/workflows/CI%20Build/badge.svg)](https://github.com/jens-maus/RaspberryMatic/actions)
-[![Snaphot Build](https://github.com/jens-maus/RaspberryMatic/workflows/Snaphot%20Build/badge.svg)](https://github.com/jens-maus/RaspberryMatic/releases/tag/snapshots)
+[![Snapshot Build](https://github.com/jens-maus/RaspberryMatic/workflows/Snapshot%20Build/badge.svg)](https://github.com/jens-maus/RaspberryMatic/releases/tag/snapshots)
 [![Contributors](https://img.shields.io/github/contributors/jens-maus/RaspberryMatic.svg)](https://github.com/jens-maus/RaspberryMatic/graphs/contributors)
 [![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/jens-maus/RaspberryMatic.svg)](https://github.com/jens-maus/RaspberryMatic/issues)
 [![Percentage of issues still open](http://isitmaintained.com/badge/open/jens-maus/RaspberryMatic.svg)](https://github.com/jens-maus/RaspberryMatic/issues)
@@ -16,12 +17,11 @@
 [![License](https://img.shields.io/github/license/jens-maus/RaspberryMatic.svg)](https://github.com/jens-maus/RaspberryMatic/blob/master/LICENSE)
 [![Donate](https://img.shields.io/badge/donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=RAQSDY9YNZVCL)
 [![GitHub sponsors](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&link=https://github.com/sponsors/jens-maus)](https://github.com/sponsors/jens-maus)
-[![Twitter](https://img.shields.io/twitter/follow/RaspberryMatic.svg?style=social&label=Follow)](https://twitter.com/RaspberryMatic)
 [![GitHub stars](https://img.shields.io/github/stars/jens-maus/RaspberryMatic.svg?style=social&label=Star)](https://github.com/jens-maus/RaspberryMatic/stargazers/)
 
 <sub>[Deutschsprachiges 🇩🇪🇦🇹🇨🇭 ReadMe](README.de.md)</sub>
 ___
-RaspberryMatic is a free and non-commercial open-source operating system alternative for running a cloud-free smart-home IoT central to provide connectivity to the [homematicIP](https://www.homematic-ip.com/) / [HomeMatic](http://homematic.com/) hardware line of IoT devices developed by [eQ-3](https://eq-3.de) and distributed by [ELV](https://elv.de/). RaspberryMatic has the aim to be 100% compatible to the vendor-developed _HomeMatic CCU3 control central_ (CCU3) system. It can be directly installed on a _[CCU3](https://www.homematic-ip.com/en/products/detail/smart-home-central-control-unit-ccu3.html)_ or _[ELV Charly](https://www.elv.de/elv-smart-home-zentrale-charly-starter-set-bausatz.html)_ hardware device. Alternatively, it can also be installed on a wide range of freely available single-board-computers (SBC) like a [RaspberryPi](https://www.raspberrypi.org/), [ASUS Tinkerboard](https://www.asus.com/Single-Board-Computer/Tinker-Board-S/), [Hardkernel ODROID](https://www.hardkernel.com/product-category/odroid-board/) or even on full-fledged hardware platforms like an [Intel NUC](https://www.intel.com/content/www/us/en/products/details/nuc.html) system. Furthermore, it can be run as a virtual appliance in modern virtualization environments (e.g. Proxmox VE, VirtualBox, Synology VMM, Docker/OCI, Kubernetes/K8s, vmWare ESXi, etc.) or even as a pure [Home Assistant](https://www.home-assistant.io/) Add-On. On top of that wider range of supported operating environments, it also comes with exclusive features on different levels (WebUI, Linux OS, connectivity, etc.) to support end users with a more modern and advanced user experience compared to the vendor-provided CCU3 operating system.
+RaspberryMatic is a free and non-commercial open-source operating system alternative for running a cloud-free smart-home IoT central to provide connectivity to the [homematicIP](https://www.homematic-ip.com/) / [HomeMatic](http://homematic.com/) hardware line of IoT devices developed by [eQ-3](https://eq-3.de) and distributed by [ELV](https://elv.de/). RaspberryMatic has the aim to be 100% compatible to the vendor-developed _HomeMatic CCU3 control central_ (CCU3) system. It can be directly installed on a _[CCU3](https://homematic-ip.com/en/product/smart-home-ccu3-central-control-unit)_ or _[ELV Charly](https://www.elv.de/elv-smart-home-zentrale-charly-starter-set-bausatz.html)_ hardware device. Alternatively, it can also be installed on a wide range of freely available single-board-computers (SBC) like a [RaspberryPi](https://www.raspberrypi.org/), [ASUS Tinkerboard](https://www.asus.com/Single-Board-Computer/Tinker-Board-S/), [Hardkernel ODROID](https://www.hardkernel.com/product-category/odroid-board/) or even on full-fledged hardware platforms like an [Intel NUC](https://www.intel.com/content/www/us/en/products/details/nuc.html) system. Furthermore, it can be run as a virtual appliance in modern virtualization environments (e.g. Proxmox VE, VirtualBox, Synology VMM, Docker/OCI, Kubernetes/K8s, vmWare ESXi, etc.) or even as a pure [Home Assistant](https://www.home-assistant.io/) Add-On. On top of that wider range of supported operating environments, it also comes with exclusive features on different levels (WebUI, Linux OS, connectivity, etc.) to support end users with a more modern and advanced user experience compared to the vendor-provided CCU3 operating system.
 
 [more...](https://github.com/jens-maus/RaspberryMatic/wiki/Einleitung)
 
@@ -37,32 +37,30 @@ On top of that, RaspberryMatic provides a whole bunch of enhancements or even bu
 
 RaspberryMatic can be directly installed on the following, commercially distributed CCU hardware:
 
-* [CCU3](https://www.homematic-ip.com/en/products/detail/smart-home-central-control-unit-ccu3.html), [ELV-Charly](https://www.elv.de/elv-smart-home-zentrale-charly-starter-set-bausatz.html)
-
-...or on the following self-made hardware systems:
-
 * _Hardware_:
+  * [CCU3](https://homematic-ip.com/en/product/smart-home-ccu3-central-control-unit), [ELV-Charly](https://www.elv.de/elv-smart-home-zentrale-charly-starter-set-bausatz.html)
   * [RaspberryPi](https://www.raspberrypi.org/)
   * [ASUS Tinkerboard](https://www.asus.com/Single-Board-Computer/Tinker-Board-S/)
   * [Hardkernel ODROID](https://www.hardkernel.com/shop/odroid-n2-with-4gbyte-ram-2/)
   * [Intel NUC](https://www.intel.de/content/www/de/de/products/boards-kits/nuc.html)
 
-...or even as a virtual appliance on the following virtualization environments:
+...or as a virtual appliance on the following virtualization environments:
 
 * _Virtualization Environment_:
   * [Proxmox Virtual Environment](https://www.proxmox.com/en/proxmox-ve)
-  * [Oracle VirtualBox](https://www.virtualbox.org/)
+  * [Home Assistant](https://home-assistant.io/)
+  * [Docker Container (OCI)](https://www.docker.com/)
+  * [Linux Container (LXC)](https://linuxcontainers.org/)
+  * [QEmu/KVM](https://www.qemu.org/)
+  * [Kubernetes/K8s](https://kubernetes.io/)
   * [Synology Virtual Machine Manager](https://www.synology.com/de-de/dsm/feature/virtual_machine_manager)
   * [QNAP VirtualizationStation](https://www.qnap.com/event/station/de-de/virtualization.php)
-  * [QEmu/KVM](https://www.qemu.org/)
-  * [vmWare ESXi](https://www.vmware.com/de/products/esxi-and-esx.html)
-  * [vmWare Workstation Player](https://www.vmware.com/de/products/workstation-player/workstation-player-evaluation.html)
   * [UNRAID](https://unraid.net/)
   * [XCP-ng/XenServer](https://xcp-ng.org/)
+  * [Oracle VirtualBox](https://www.virtualbox.org/)
+  * [vmWare ESXi](https://www.vmware.com/de/products/esxi-and-esx.html)
+  * [vmWare Workstation Player](https://www.vmware.com/de/products/workstation-player/workstation-player-evaluation.html)
   * [HyperV](https://docs.microsoft.com/de-de/virtualization/hyper-v-on-windows/)
-  * [Docker/OCI](https://www.docker.com/)
-  * [Kubernetes/K8s](https://kubernetes.io/)
-  * [Home Assistant](https://home-assistant.io/)
 
 [more...](https://github.com/jens-maus/RaspberryMatic/wiki/Einleitung#vorraussetzungen)
 
@@ -90,19 +88,20 @@ Under [Releases](https://github.com/jens-maus/RaspberryMatic/releases) you will 
      * [Hardkernel ODROID](https://github.com/jens-maus/RaspberryMatic/wiki/Installation-ODROID)
      * [Intel NUC](https://github.com/jens-maus/RaspberryMatic/wiki/Installation-IntelNUC)
    * [Basic Installation (Virtual)](https://github.com/jens-maus/RaspberryMatic/wiki/Installation#grundinstallation-virtuell)
-     * [vmWare ESXi](https://github.com/jens-maus/RaspberryMatic/wiki/Installation-vmWare-ESXi)
      * [Proxmox Virtual Environment](https://github.com/jens-maus/RaspberryMatic/wiki/Installation-Proxmox-VE)
-     * [Oracle VirtualBox](https://github.com/jens-maus/RaspberryMatic/wiki/Installation-VirtualBox)
+     * [Home Assistant Add-on](https://github.com/jens-maus/RaspberryMatic/wiki/Installation-HomeAssistant)
+     * [Docker Container (OCI)](https://github.com/jens-maus/RaspberryMatic/wiki/Installation-Docker-OCI)
+     * [Linux Container (LXC)](https://github.com/jens-maus/RaspberryMatic/wiki/Installation-LXC)
+     * [QEmu/KVM](https://github.com/jens-maus/RaspberryMatic/wiki/Installation-QEmu)
+     * [Kubernetes/K8s](https://github.com/jens-maus/RaspberryMatic/wiki/Installation-Kubernetes)
      * [Synology Virtual Machine Manager](https://github.com/jens-maus/RaspberryMatic/wiki/Installation-Synology-VMM)
      * [QNAP VirtualizationStation](https://github.com/jens-maus/RaspberryMatic/wiki/Installation-QNAP-VirtualizationStation)
-     * [vmWare Workstation Player](https://github.com/jens-maus/RaspberryMatic/wiki/Installation-vmWare-Workstation-Player)
-     * [QEmu/KVM](https://github.com/jens-maus/RaspberryMatic/wiki/Installation-QEmu)
      * [UNRAID](https://github.com/jens-maus/RaspberryMatic/wiki/Installation-UNRAID)
      * [XCP-ng/XenServer](https://github.com/jens-maus/RaspberryMatic/wiki/Installation-XCPng)
+     * [Oracle VirtualBox](https://github.com/jens-maus/RaspberryMatic/wiki/Installation-VirtualBox)
+     * [vmWare Workstation Player](https://github.com/jens-maus/RaspberryMatic/wiki/Installation-vmWare-Workstation-Player)
+     * [vmWare ESXi](https://github.com/jens-maus/RaspberryMatic/wiki/Installation-vmWare-ESXi)
      * [HyperV](https://github.com/jens-maus/RaspberryMatic/wiki/Installation-HyperV)
-     * [Docker/OCI](https://github.com/jens-maus/RaspberryMatic/wiki/Installation-Docker-OCI)
-     * [Kubernetes/K8s](https://github.com/jens-maus/RaspberryMatic/wiki/Installation-Kubernetes)
-     * [Home Assistant Add-on](https://github.com/jens-maus/RaspberryMatic/wiki/Installation-HomeAssistant)
    * [Configuration Upgrade](https://github.com/jens-maus/RaspberryMatic/wiki/Installation#konfigurationsübernahme)
      * [Upgrade from CCU3](https://github.com/jens-maus/RaspberryMatic/wiki/Installation#umstieg-von-ccu3)
      * [Upgrade from CCU2](https://github.com/jens-maus/RaspberryMatic/wiki/Installation#umstieg-von-ccu2)

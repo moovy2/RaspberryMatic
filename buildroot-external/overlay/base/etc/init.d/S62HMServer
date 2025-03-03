@@ -1,5 +1,5 @@
 #!/bin/sh
-# shellcheck shell=dash disable=SC2169 source=/dev/null
+# shellcheck shell=dash disable=SC2169,SC3010 source=/dev/null
 #
 # Starts HMServer.
 #
@@ -16,7 +16,7 @@ HM_SERVER=/opt/HMServer/HMIPServer.jar:/opt/HMServer/coupling/ESHBridge.jar
 HM_SERVER_CLASS="de.eq3.ccu.server.ip.HMIPServer"
 HM_SERVER_ARGS="/var/etc/crRFD.conf /var/etc/HMServer.conf"
 HM_SERVER_DEVNODE=/dev/mmd_hmip
-LOGLEVEL_HMIP=ERROR
+LOGLEVEL_HMIP=error
 PIDFILE=/var/run/HMIPServer.pid
 
 init() {
@@ -29,29 +29,30 @@ init() {
     fi
   fi
 
-  # create a log4j.xml config file in /var/etc and modify it
+  # create a log4j2.xml config file in /var/etc and modify it
   # according to the syslog settings in /etc/config/syslog
-  cp -a ${CFG_TEMPLATE_DIR}/log4j.xml /var/etc/
+  cp -a ${CFG_TEMPLATE_DIR}/log4j2.xml /var/etc/
 
   # get the current syslog settings
   [[ -r /etc/config/syslog ]] && . /etc/config/syslog
 
   # check if we have an external loghost and if so, modify
-  # the SYSLOG appender in log4j.xml accordingly.
+  # the SYSLOG appender in log4j2.xml accordingly.
   if [[ -n "${LOGHOST}" ]]; then
-    sed -i "s|value=\"127\.0\.0\.1\"|value=\"${LOGHOST}\"|" /var/etc/log4j.xml
-    sed -i "/appender-ref ref=\"FILE\"/a\\    <appender-ref ref=\"SYSLOG\"\\/>" /var/etc/log4j.xml
+    sed -i "s|host=\"127\.0\.0\.1\"|host=\"${LOGHOST}\"|" /var/etc/log4j2.xml
+    sed -i "/AppenderRef ref=\"File\"/a\\    <AppenderRef ref=\"SYSLOG\"\\/>" /var/etc/log4j2.xml
   fi
 
-  # modify "priority value" values in log4j.xml to set the
+  # modify "priority value" values in log4j2.xml to set the
   # global loglevel
-  sed -i "s/priority value=\".*\"/priority value=\"${LOGLEVEL_HMIP}\"/g" /var/etc/log4j.xml
+  sed -i "s/level=\".*\"/level=\"$(echo ${LOGLEVEL_HMIP} | tr '[:upper:]' '[:lower:]')\"/g" /var/etc/log4j2.xml
 
   # if the userfs is located on a non-mmc device (not on a SD card)
   # we can safely use the old /usr/local/sdcard directory path as
   # the general storagePath for diagrams and daily backups
   storagePath=""
-  if [[ "${HM_HOST}" == "oci" ]] || grep " /usr/local " /proc/mounts | grep -qv "^/dev/mmc"; then
+  if [[ "${HM_HOST}" =~ oci\|lxc ]] ||
+     grep " /usr/local " /proc/mounts | grep -qv "^/dev/mmc"; then
     storagePath="/usr/local/sdcard"
     mkdir -p ${storagePath}
   fi
@@ -141,7 +142,7 @@ init() {
 }
 
 waitStartupComplete() {
-  STEPS=100
+  STEPS=150
   for i in $(seq 1 ${STEPS}); do
     sleep 2
     echo -n "."
@@ -161,11 +162,15 @@ start() {
 
   # get the architecture
   ARCH=$(uname -m)
-  JAVAOPT=
+  JAVAOPT=""
 
   # calculate the maximum used heap size (-Xmx) depending on the
   # total amount of RAM we have (use max. 25%) - use multiple of 128MB
-  MAXHEAP=$(free -m | grep Mem: | awk '{print int($2*0.25/128)*128}')
+  if [[ -e /sys/fs/cgroup/memory.max ]] && [[ "$(cat /sys/fs/cgroup/memory.max)" != "max" ]]; then
+    MAXHEAP=$(awk '{print int(($1/1024/1024)*0.25/128)*128}' /sys/fs/cgroup/memory.max)
+  else
+    MAXHEAP=$(grep MemTotal: /proc/meminfo | awk '{print int($2/1024*0.25/128)*128}')
+  fi
   if [[ -n "${MAXHEAP}" ]] && [[ "${MAXHEAP}" -gt 128 ]]; then
     JAVAOPT="-Xmx${MAXHEAP}m ${JAVAOPT}"
   else
@@ -189,7 +194,7 @@ start() {
   echo -900 >/proc/$$/oom_score_adj 2>/dev/null
 
   # shellcheck disable=SC2086
-  start-stop-daemon -b -S -q -m -p "${PIDFILE}" --exec java -- -Dos.arch=${ARCH} ${JAVAOPT} -Dlog4j.configuration=file:///var/etc/log4j.xml -Dfile.encoding=ISO-8859-1 -cp "${HM_SERVER}" ${HM_SERVER_CLASS} ${HM_SERVER_ARGS}
+  start-stop-daemon -b -S -q -m -p "${PIDFILE}" --exec java -- -Dos.arch=${ARCH} ${JAVAOPT} -Dlog4j.configurationFile=file:///var/etc/log4j2.xml -Dfile.encoding=ISO-8859-1 -cp "${HM_SERVER}" ${HM_SERVER_CLASS} ${HM_SERVER_ARGS}
   echo -n "."
   waitStartupComplete
 }
@@ -229,4 +234,4 @@ case "$1" in
     exit 1
 esac
 
-exit $?
+exit 0
