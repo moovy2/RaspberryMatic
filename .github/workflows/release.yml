@@ -418,7 +418,7 @@ jobs:
       - name: Build OCI tags
         shell: bash
         run: |
-          BASE_TAG="ghcr.io/${{ github.repository_owner }}/openccu"
+          BASE_TAG="ghcr.io/${GITHUB_REPOSITORY@L}"
           UNIQUE_TAG="${BASE_TAG}:${{ needs.release_draft.outputs.version }}"
           BRANCH="${GITHUB_REF##*/}"
           if [[ ${BRANCH} == 'master' ]]; then
@@ -426,6 +426,7 @@ jobs:
           else
             BRANCH_TAG="${BASE_TAG}:latest-${BRANCH}"
           fi
+          echo "base_tag=${BASE_TAG}" >> $GITHUB_OUTPUT
           echo "unique_tag=${UNIQUE_TAG}" >> $GITHUB_OUTPUT
           echo "branch_tag=${BRANCH_TAG}" >> $GITHUB_OUTPUT
         id: extract_branch
@@ -448,7 +449,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5.8.0
         with:
-          images: ghcr.io/${{ github.repository_owner }}/openccu
+          images: ${{ steps.extract_branch.outputs.base_tag }}
           labels: |
             org.opencontainers.image.description=Alternative OS for your homematicIP CCU
             org.opencontainers.image.vendor=OpenCCU OpenSource Project
@@ -510,7 +511,7 @@ jobs:
         uses: actions/attest-build-provenance@v3
         id: attest
         with:
-          subject-name: ghcr.io/${{ github.repository_owner }}/openccu
+          subject-name: ${{ steps.extract_branch.outputs.base_tag }}
           subject-digest: ${{ steps.docker_build.outputs.digest }}
           push-to-registry: true
 
