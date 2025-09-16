@@ -1,6 +1,16 @@
 --- occu/WebUI/www/config/cp_maintenance.cgi.orig
 +++ occu/WebUI/www/config/cp_maintenance.cgi
-@@ -234,16 +234,6 @@
+@@ -54,7 +54,8 @@
+ 
+     puts "var req = jQuery.ajax({"
+       puts " url : \"/EULA.\"+lang,"
+-      puts " dataType: \"html\""
++      puts " dataType: \"html\","
++      puts " cache: false"
+     puts "});"
+ 
+     puts "req.done(function(data) {"
+@@ -234,16 +235,6 @@
      <p class="CLASS20914">
      ${dialogSettingsCMDialogPerformSoftwareUpdateP1}
      </p>
@@ -159,13 +169,6 @@
      <script type="text/javascript" src="/webui/js/extern/jquery.js"></script>
      <script type="text/javascript" src="/webui/js/extern/jqueryURLPlugin.js"></script>
      <script type="text/javascript" src="/webui/js/extern/prototype.js"></script>
-@@ -195,4 +195,4 @@
-       translateAttribute("#WebUIorPDA", "title", "tooltipWebUIorPDA");
-     </script>
-   </body>
--</html>
-\ No newline at end of file
-+</html>
 --- occu/WebUI/www/rega/logout.htm.orig
 +++ occu/WebUI/www/rega/logout.htm
 @@ -2,7 +2,7 @@
@@ -187,8 +190,8 @@
 -    <meta http-equiv="pragma"        content="no-cache">
 -    <meta http-equiv="expires"       content="0">
  
-     <link rel="shortcut icon" href="/ise/img/rm-favicon.ico" type="image/vnd.microsoft.icon"/>
-     <link rel="icon"          href="/ise/img/rm-favicon.ico" type="image/vnd.microsoft.icon" />
+     <link rel="shortcut icon" href="/ise/img/favicon.ico" type="image/vnd.microsoft.icon"/>
+     <link rel="icon"          href="/ise/img/favicon.ico" type="image/vnd.microsoft.icon" />
 @@ -215,6 +212,6 @@
          </div>
        </div>
