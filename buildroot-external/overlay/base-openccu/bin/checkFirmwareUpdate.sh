@@ -110,7 +110,7 @@ if [[ -z "${TARGET_VERSION}" ]]; then
 else
   REQUEST_URL=${TARGET_URL}
 fi
-/usr/bin/curl --silent -o "${RELEASES_JSON}" "${REQUEST_URL}"
+/usr/bin/curl -L --silent -o "${RELEASES_JSON}" "${REQUEST_URL}"
 
 # make sure RELEASES_JSON is removed under all circumstances
 # shellcheck disable=SC2064
