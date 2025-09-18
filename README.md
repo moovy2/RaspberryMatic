@@ -1,7 +1,7 @@
 <img height="60px" src="release/logo.png" align="left">
 <br/>
 
-### The alternative/free operating system for your homematicIP CCU
+### Your own flexible & cloud-free homematicIP® CCU smart home solution
 
 [![Current Release](https://img.shields.io/github/release/OpenCCU/OpenCCU.svg)](https://github.com/OpenCCU/OpenCCU/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/OpenCCU/OpenCCU/latest/total.svg)](https://github.com/OpenCCU/OpenCCU/releases/latest)
