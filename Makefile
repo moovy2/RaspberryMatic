@@ -32,7 +32,7 @@ buildroot-$(BUILDROOT_VERSION).tar.gz: $(BR2_DL_DIR)
 
 buildroot-$(BUILDROOT_VERSION): | buildroot-$(BUILDROOT_VERSION).tar.gz
 	@echo "[patching buildroot-$(BUILDROOT_VERSION)]"
-	if [ ! -d $@ ]; then tar xf buildroot-$(BUILDROOT_VERSION).tar.gz; for p in $(sort $(wildcard buildroot-patches/*.patch)); do echo "\nApplying $${p}"; patch -d buildroot-$(BUILDROOT_VERSION) --remove-empty-files -p1 < $${p} || exit 127; [ ! -x $${p%.*}.sh ] || $${p%.*}.sh buildroot-$(BUILDROOT_VERSION); done; fi
+	if [ ! -d $@ ]; then tar xf buildroot-$(BUILDROOT_VERSION).tar.gz; for p in $(sort $(wildcard buildroot-patches/*.patch)); do echo "\nApplying $${p}"; patch -d buildroot-$(BUILDROOT_VERSION) --remove-empty-files --no-backup-if-mismatch -p1 < $${p} || exit 127; [ ! -x $${p%.*}.sh ] || $${p%.*}.sh buildroot-$(BUILDROOT_VERSION); done; fi
 
 build-$(PRODUCT): | buildroot-$(BUILDROOT_VERSION)
 	mkdir $(shell pwd)/build-$(PRODUCT)
