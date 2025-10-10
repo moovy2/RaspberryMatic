@@ -1,6 +1,6 @@
 ---
 name: OpenCCU (snapshot)
-version: 3.83.6.20251009-5033320
+version: 3.83.6.20251010-11bc9a2
 stage: experimental
 slug: raspberrymatic-dev
 image: ghcr.io/openccu/openccu
