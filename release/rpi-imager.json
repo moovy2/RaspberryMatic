@@ -1,75 +1,75 @@
 {
   "os_list": [
     {
-      "name": "OpenCCU 3.85.7.20260124 (Pi 5)",
+      "name": "OpenCCU 3.85.7.20260131 (Pi 5)",
       "description": "Lightweight Linux OS for running a HomeMatic/homematicIP IoT central.",
-      "url": "https://github.com/OpenCCU/OpenCCU/releases/download/3.85.7.20260124/OpenCCU-3.85.7.20260124-rpi5.zip",
+      "url": "https://github.com/OpenCCU/OpenCCU/releases/download/3.85.7.20260131/OpenCCU-3.85.7.20260131-rpi5.zip",
       "icon": "https://raw.githubusercontent.com/OpenCCU/OpenCCU/master/release/rpi-imager.png",
-      "release_date": "2026-01-24",
+      "release_date": "2026-01-31",
       "extract_size": 1345249792,
-      "extract_sha256": "69a2a7b98acdebc22553d890a6f8e565004257c41e464d0dbff636985d7a2bf6",
-      "image_download_size": 350754047,
-      "image_download_sha256": "44304c08a6696d7a1538f6a2032aa404a4d3519cd2aae00df24c43afa6b6bd21",
+      "extract_sha256": "c19696686db5e655a3ff2497c46a7d5eb1d43166be20ae8d7ff6dff241ec0b53",
+      "image_download_size": 351010690,
+      "image_download_sha256": "269fbaec3f78c502bf218100393d40b29094fca8f865ceff1733541fcb228f2c",
       "website": "https://openccu.de/",
       "devices": [
         "pi5-64bit"
       ]
     },
     {
-      "name": "OpenCCU 3.85.7.20260124 (Pi 4, Pi 400)",
+      "name": "OpenCCU 3.85.7.20260131 (Pi 4, Pi 400)",
       "description": "Lightweight Linux OS for running a HomeMatic/homematicIP IoT central.",
-      "url": "https://github.com/OpenCCU/OpenCCU/releases/download/3.85.7.20260124/OpenCCU-3.85.7.20260124-rpi4.zip",
+      "url": "https://github.com/OpenCCU/OpenCCU/releases/download/3.85.7.20260131/OpenCCU-3.85.7.20260131-rpi4.zip",
       "icon": "https://raw.githubusercontent.com/OpenCCU/OpenCCU/master/release/rpi-imager.png",
-      "release_date": "2026-01-24",
+      "release_date": "2026-01-31",
       "extract_size": 1345249792,
-      "extract_sha256": "2949c3ed4dd7a6a56d082011ce05c3fc05cc8988134dd43caf22706e817628a2",
-      "image_download_size": 351665581,
-      "image_download_sha256": "7f7261fed37ed2124c69666112324ce9dcba5103ef92a93f49b3b065b85d85f0",
+      "extract_sha256": "18a5d3caeddf2d18c198edf5f2246747a853db05784c193449e19a64eb616c28",
+      "image_download_size": 351746878,
+      "image_download_sha256": "543448097e83b659a766adad951d31029e9ce3cf26a7145a09abbf3cc05f05a9",
       "website": "https://openccu.de/",
       "devices": [
         "pi4-64bit"
       ]
     },
     {
-      "name": "OpenCCU 3.85.7.20260124 (Pi 3, Pi Zero 2, ELV-Charly, CCU3)",
+      "name": "OpenCCU 3.85.7.20260131 (Pi 3, Pi Zero 2, ELV-Charly, CCU3)",
       "description": "Lightweight Linux OS for running a HomeMatic/homematicIP IoT central.",
-      "url": "https://github.com/OpenCCU/OpenCCU/releases/download/3.85.7.20260124/OpenCCU-3.85.7.20260124-rpi3.zip",
+      "url": "https://github.com/OpenCCU/OpenCCU/releases/download/3.85.7.20260131/OpenCCU-3.85.7.20260131-rpi3.zip",
       "icon": "https://raw.githubusercontent.com/OpenCCU/OpenCCU/master/release/rpi-imager.png",
-      "release_date": "2026-01-24",
+      "release_date": "2026-01-31",
       "extract_size": 1345249792,
-      "extract_sha256": "a12457a42052fe07b6d2631e43365be7238005f7dc7de4a177adf67b387230b1",
-      "image_download_size": 351322994,
-      "image_download_sha256": "aaf00f470e75465f6dca16e9c4dc6730ae280a8cb5668e4cac109683608aa698",
+      "extract_sha256": "0d6932e76bf3edd23303ec084eca5ae40b7d5283350e051d321f1070915347ac",
+      "image_download_size": 351344370,
+      "image_download_sha256": "c1be0fd54c7d5362f0fc1cc7ae26fceb55f52ff93e429dd162cc8ad42506737d",
       "website": "https://openccu.de/",
       "devices": [
         "pi3-64bit"
       ]
     },
     {
-      "name": "OpenCCU 3.85.7.20260124 (Pi 2)",
+      "name": "OpenCCU 3.85.7.20260131 (Pi 2)",
       "description": "Lightweight Linux OS for running a HomeMatic/homematicIP IoT central.",
-      "url": "https://github.com/OpenCCU/OpenCCU/releases/download/3.85.7.20260124/OpenCCU-3.85.7.20260124-rpi2.zip",
+      "url": "https://github.com/OpenCCU/OpenCCU/releases/download/3.85.7.20260131/OpenCCU-3.85.7.20260131-rpi2.zip",
       "icon": "https://raw.githubusercontent.com/OpenCCU/OpenCCU/master/release/rpi-imager.png",
-      "release_date": "2026-01-24",
+      "release_date": "2026-01-31",
       "extract_size": 1345249792,
-      "extract_sha256": "8402c8ac2ee54703808cf482f1c479a3c29368055f5d8daea3ab64828ac03f52",
-      "image_download_size": 320505165,
-      "image_download_sha256": "94e6cd020058f904b68733ebbe38a6c3d6df392e4c1bcd6d8a85750d562603e6",
+      "extract_sha256": "742e39db2b3f28c260c388837dfcb743e79d14f85840520d75bc1fa8e0b3dd2b",
+      "image_download_size": 317945950,
+      "image_download_sha256": "29291dd3cc58d473328665ecaac7ea6621ce8ac880230cec1719f61956ae63ce",
       "website": "https://openccu.de/",
       "devices": [
         "pi2-32bit"
       ]
     },
     {
-      "name": "OpenCCU 3.85.7.20260124 (Pi Zero, Pi 1)",
+      "name": "OpenCCU 3.85.7.20260131 (Pi Zero, Pi 1)",
       "description": "Lightweight Linux OS for running a HomeMatic/homematicIP IoT central.",
-      "url": "https://github.com/OpenCCU/OpenCCU/releases/download/3.85.7.20260124/OpenCCU-3.85.7.20260124-rpi0.zip",
+      "url": "https://github.com/OpenCCU/OpenCCU/releases/download/3.85.7.20260131/OpenCCU-3.85.7.20260131-rpi0.zip",
       "icon": "https://raw.githubusercontent.com/OpenCCU/OpenCCU/master/release/rpi-imager.png",
-      "release_date": "2026-01-24",
+      "release_date": "2026-01-31",
       "extract_size": 1345249792,
-      "extract_sha256": "825eb94ff46d01ebc0b4b5347bc0de4367f82e6042f00af0dd4ff0d9a03f4d82",
-      "image_download_size": 317328571,
-      "image_download_sha256": "f5faaf416986019fd7c330f5dc93cf81e11c4795f8f7f45d4c2703756ca59036",
+      "extract_sha256": "07ae2a064ed736f324c038bb61149065ef2cefd286e0718f95896722e0fda29b",
+      "image_download_size": 317312828,
+      "image_download_sha256": "9c22cd31a9cde96ad1db01e181ce521782737290886ea9f7bdfe4afd162255b7",
       "website": "https://openccu.de/",
       "devices": [
         "pi1-32bit"
