@@ -1,6 +1,6 @@
 ---
 name: OpenCCU (snapshot)
-version: 3.87.6.20260321-c05d7fd
+version: 3.87.6.20260323-08d582c
 stage: experimental
 slug: openccu-dev
 image: ghcr.io/openccu/openccu
