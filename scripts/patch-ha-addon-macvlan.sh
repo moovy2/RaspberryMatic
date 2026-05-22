@@ -43,13 +43,37 @@
 #############################################################
 #                         Main App                          #
 #############################################################
-echo "OpenCCU HA-Addon macvlan patch script v1.4"
+echo "OpenCCU HA-Addon macvlan patch script v1.5"
 echo "Copyright (c) 2023-2026 Jens Maus <mail@jens-maus.de>"
 echo
 
-# check if non-interactive mode is requested
-if [[ "${1}" == "-n" ]]; then
-  NON_INTERACTIVE=true
+# parse command-line arguments
+FORCE_MODE=false
+NON_INTERACTIVE=false
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -f)
+      FORCE_MODE=true
+      shift
+      ;;
+    -n)
+      NON_INTERACTIVE=true
+      shift
+      ;;
+    *)
+      echo "ERROR: Unknown option: $1"
+      exit 1
+      ;;
+  esac
+done
+
+if [[ "${FORCE_MODE}" != "true" ]]; then
+  echo "ERROR: The functionality of this patch script has been replaced by a new"
+  echo "       'OpenCCU HAP/DRAP-Helper' Home Assistant App. So instead of using"
+  echo "       this script to get the communication with a HmIP-HAP / HmIPW-DRAP"
+  echo "       running please install this Helper HA-App which is available from"
+  echo "       the OpenCCU HA-Apps repository."
+  exit 2
 fi
 
 # network calc helper functions
@@ -90,7 +114,7 @@ cidr2network() {
 echo -n "HomeAssistant Main Ethernet Interface (e.g. eth0): "
 if [[ -z "${CCU_NETWORK_INTERFACE}" ]]; then
   CCU_NETWORK_INTERFACE=$(ip -o -f inet route | grep -e "^default" | awk '{print $5}')
-  if [[ -z "${NON_INTERACTIVE}" ]]; then
+  if [[ "${NON_INTERACTIVE}" != "true" ]]; then
     read -r -e -i "${CCU_NETWORK_INTERFACE}" CCU_NETWORK_INTERFACE </dev/tty
   else
     echo "${CCU_NETWORK_INTERFACE}"
@@ -103,7 +127,7 @@ echo -n "HomeAssistant Main Subnet (e.g. 192.168.178.0/24): "
 if [[ -z "${CCU_NETWORK_SUBNET}" ]]; then
   CCU_NETWORK_CIDR=$(ip -o -f inet addr show dev "${CCU_NETWORK_INTERFACE}" | awk '/scope global/ {print $4}')
   CCU_NETWORK_SUBNET=$(cidr2network "${CCU_NETWORK_CIDR}")
-  if [[ -z "${NON_INTERACTIVE}" ]]; then
+  if [[ "${NON_INTERACTIVE}" != "true" ]]; then
     read -r -e -i "${CCU_NETWORK_SUBNET}" CCU_NETWORK_SUBNET </dev/tty
   else
     echo "${CCU_NETWORK_SUBNET}"
@@ -115,7 +139,7 @@ fi
 echo -n "HomeAssistant Main Gateway (e.g. 192.168.178.1): "
 if [[ -z "${CCU_NETWORK_GATEWAY}" ]]; then
   CCU_NETWORK_GATEWAY=$(ip route list dev "${CCU_NETWORK_INTERFACE}" | awk ' /^default/ {print $3}')
-  if [[ -z "${NON_INTERACTIVE}" ]]; then
+  if [[ "${NON_INTERACTIVE}" != "true" ]]; then
     read -r -e -i "${CCU_NETWORK_GATEWAY}" CCU_NETWORK_GATEWAY </dev/tty
   else
     echo "${CCU_NETWORK_GATEWAY}"
@@ -127,7 +151,7 @@ fi
 echo -n "OpenCCU Add-on Hostname (e.g. 5422eb72-openccu): "
 if [[ -z "${CCU_CONTAINER_NAME}" ]]; then
   CCU_CONTAINER_NAME=$(docker ps --format '{{.Names}}' | grep "_openccu" | cut -c7-)
-  if [[ -z "${NON_INTERACTIVE}" ]]; then
+  if [[ "${NON_INTERACTIVE}" != "true" ]]; then
     read -r -e -i "${CCU_CONTAINER_NAME}" CCU_CONTAINER_NAME </dev/tty
   else
     echo "${CCU_CONTAINER_NAME}"
@@ -144,7 +168,7 @@ CCU_CONTAINER_NAME=$(echo "addon_${CCU_CONTAINER_NAME}" | sed 's/-open/_open/')
 echo -n "OpenCCU Add-on IP (e.g. 192.168.178.4): "
 if [[ -z "${CCU_CONTAINER_IP}" ]]; then
   CCU_CONTAINER_IP=$(echo "${CCU_NETWORK_GATEWAY}" | cut -d"." -f1-3)
-  if [[ -z "${NON_INTERACTIVE}" ]]; then
+  if [[ "${NON_INTERACTIVE}" != "true" ]]; then
     read -r -e -i "${CCU_CONTAINER_IP}." CCU_CONTAINER_IP </dev/tty
   else
     echo "${CCU_CONTAINER_IP}"
