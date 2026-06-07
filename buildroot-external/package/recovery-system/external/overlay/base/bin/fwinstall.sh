@@ -9,6 +9,31 @@
 # Apache 2.0 License applies
 #
 
+get_gzip_uncompressed_size()
+{
+  local filename="$1"
+  local size
+
+  if [[ ! -f "${filename}" ]]; then
+    return 1
+  fi
+
+  size=$(/bin/gzip -dc "${filename}" 2>/dev/null | wc -c 2>/dev/null | tr -d '[:space:]')
+  case "${size}" in
+    ''|*[!0-9]*)
+      return 1
+      ;;
+    *)
+      if [[ "${size}" -gt 0 ]]; then
+        echo "${size}"
+        return 0
+      fi
+      ;;
+  esac
+
+  return 1
+}
+
 ######
 # function that is called to resize the rootfs partition
 resize_rootfs()
@@ -516,7 +541,7 @@ fwprepare()
       echo -ne "rootfs ext4.gz identified, validating, "
 
       # check if unarchived size is < available space or we abort right away!
-      REQSIZE=$(/bin/gzip -l "${filename}" 2>/dev/null | awk 'NR==2 {print $2}')
+      REQSIZE=$(get_gzip_uncompressed_size "${filename}")
       if [[ -z "${REQSIZE}" ]] || [[ "${REQSIZE}" -le 0 ]] || [[ "${REQSIZE}" -ge "${AVAILSPACE}" ]]; then
         echo "ERROR: ${REQSIZE} bytes required!"
         exit 1
