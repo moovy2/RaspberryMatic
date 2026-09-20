@@ -899,15 +899,6 @@
       "sha256": "2231716b81895056474dd7ebbb71f35a2e43c55e2956a0f040ae92ca39af90e5"
     },
     {
-      "added": 2,
-      "files": [
-        "www/rega/esp/rule.inc"
-      ],
-      "patch": "0106-WebUI-Improvement-TreatOPERATOR_NONEasOPERATOR_OR.patch",
-      "removed": 2,
-      "sha256": "888b4b0b3ba4af348e9b6fe5f4fca24d90797a81f5eace94624600c1040fb7cb"
-    },
-    {
       "added": 3,
       "files": [
         "www/webui/webui.js"
@@ -1886,5 +1877,5 @@
     }
   ],
   "schema": 1,
-  "series_sha256": "d5018ad05cac201e57edd7c34582ff4ac8b55fd6be04e37a4b4fb39b976abe4b"
+  "series_sha256": "a1e79a05d9934ec404b83de4c19d01b3eca828911b2ff981dbca2e7898052cb8"
 }
