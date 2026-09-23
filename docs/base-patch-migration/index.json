@@ -30,7 +30,7 @@
       ],
       "patch": "0001-OpenCCU.patch",
       "removed": 254,
-      "sha256": "4128a27479a77bcd259bf417b8a0ecd308ecb178075fe0267a49c8cd73f33026"
+      "sha256": "d854c60a9a4ba417c6700530678ffabe572ba2f727a8f2009f067446e32ee766"
     },
     {
       "added": 147,
@@ -1559,16 +1559,6 @@
       "sha256": "187722253f5cac8954d9f9df258b6e672a5b10a405c4b886a9e206b8b373b41c"
     },
     {
-      "added": 4,
-      "files": [
-        "www/rega/pages/index.htm",
-        "www/webui/webui.js"
-      ],
-      "patch": "0181-WebUI-Fix-HTTPSfirmwareURLsOnly.patch",
-      "removed": 5,
-      "sha256": "484df25a8dbbbba902f58758ef551895c407576da33e0d38d327f3b8917aa924"
-    },
-    {
       "added": 110,
       "files": [
         "www/webui/js/lang/de/translate.lang.extension.js",
@@ -1773,5 +1763,5 @@
     }
   ],
   "schema": 1,
-  "series_sha256": "1889d19c04b5f615c2f469054e8c824ea5dba703dab55d9ca1e16488fc718457"
+  "series_sha256": "8034f30637341e5940dcd88a78288125c816742dbd745fcc8e001e183fb5bca6"
 }
