@@ -50,18 +50,6 @@
       "sha256": "a5d2e7ceec22e640b907784f1f7b3ffa0eb0ff88f24986f1570808510e2a068c"
     },
     {
-      "added": 4,
-      "files": [
-        "www/api/methods/ccu/restartReGa.tcl",
-        "www/api/methods/ccu/restartsshdaemon.tcl",
-        "www/api/methods/user/restartlighttpd.tcl",
-        "www/config/cp_maintenance.cgi"
-      ],
-      "patch": "0004-WebUI-UseMonitRestarts.patch",
-      "removed": 8,
-      "sha256": "4e849aadf54421f69195078bdd3171d6ddfa4960e15e54823bd5ab53b73ac5f8"
-    },
-    {
       "added": 172,
       "files": [
         "www/api/backup/version.cgi",
@@ -1353,7 +1341,7 @@
       "sha256": "c9d41d32927372f55706888130f0040032ddfda18362119f82d3a9418dd0e6df"
     },
     {
-      "added": 19,
+      "added": 21,
       "files": [
         "www/api/eq3/jsonrpc.tcl",
         "www/api/methods/ccu/restartReGa.tcl",
@@ -1363,8 +1351,8 @@
         "www/api/methods/user/setregaversion.tcl"
       ],
       "patch": "0159-WebUI-Fix-JSONRpcResponses.patch",
-      "removed": 7,
-      "sha256": "3ccf4cbe9be2912ad632127d212df047a92d2b5cdb55f3d84963392bb6840e71"
+      "removed": 9,
+      "sha256": "d0919c1b67842795d58586acb8d9dc59af32ff464eb5513da06cdb5f55a2cc3d"
     },
     {
       "added": 165,
@@ -1699,5 +1687,5 @@
     }
   ],
   "schema": 1,
-  "series_sha256": "510550bf0d4169fda3115d72827e931f34ecc45ac8b0af7d8e95952b852b2db6"
+  "series_sha256": "1a28089ef1e25546670657d9c99fe236054a1e475971f7ed1f6bc91bdb4468e9"
 }
